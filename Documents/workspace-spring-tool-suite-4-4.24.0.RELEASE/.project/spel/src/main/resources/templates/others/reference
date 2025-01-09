@@ -1,0 +1,144 @@
+[03-01-2025 10:14] Bs Lokesh: package com.example.controller;
+
+import java.security.PublicKey;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.entity.JsonInputEntity;
+import com.example.service.JsonSchemaValidationService;
+import com.example.service.JsonVaildWithSpel;
+
+@RestController
+@RequestMapping("/validate")
+public class JsonSchemaValidationController {
+
+	@Autowired
+	private JsonSchemaValidationService validationService;
+	@Autowired
+	private JsonVaildWithSpel spelValidationService;
+
+	@PostMapping("/json")
+	public String validateJson(@RequestBody String jsonInput) {
+		try {
+			String schemaFilePath = "C:/Users/LOGESHKUMAR/eclipse-workspace/JsonVaildateWithJava/src/main/resources/templates/Schema.json";
+			return validationService.validateJson(jsonInput, schemaFilePath);
+		} catch (Exception e) {
+			return "Error during validation: " + e.getMessage();
+		}
+	}
+
+	@PostMapping("/validateJson")
+	public String validateJsonWithSpel(@RequestBody JsonInputEntity jsonInput) {
+
+		if (!spelValidationService.validateAction(jsonInput.getAction())) {
+			return "Invalid action value";
+		}
+
+		if (!spelValidationService.validateActionCode(jsonInput.getActionCode())) {
+			return "Invalid actionCode value";
+		}
+
+		if (!spelValidationService.validateSendersReference(jsonInput.getFilterClause().getSendersReference())) {
+			return "Invalid sendersReference value";
+		}
+
+		if (!spelValidationService.validateEntityCode(jsonInput.getEntityCode())) {
+			return "Invalid entityCode value";
+		}
+		
+		return "JSON is valid";
+	}
+	
+	@PostMapping("/validateTernaryJson")
+	public String ternaryJson(@RequestBody JsonInputEntity jsonInput) {
+		String action = spelValidationService.action(jsonInput.getAction());
+		if(action.contains("invalid")) {
+			return "Invalid action value";
+			
+		}
+
+		String actionCode =spelValidationService.actionCode(jsonInput.getActionCode());
+		if (actionCode.contains("invalid")) {
+			return "Invalid actionCode value";
+		}
+		
+		String sendersReference =spelValidationService.sendersReference(jsonInput.getFilterClause().getSendersReference());
+		if (sendersReference.contains("invalid")) {
+			return "Invalid sendersReference value";
+		}
+
+		String entityCode =spelValidationService.entityCode(jsonInput.getEntityCode());
+		if (entityCode.contains("invalid")) {
+			return "Invalid entityCode value";
+		}
+		
+		return "JSON is valid in ternaryJson";
+		
+	}
+}
+[03-01-2025 10:14] Bs Lokesh: package com.example.service;
+
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.stereotype.Service;
+
+@Service
+public class JsonVaildWithSpel {
+
+	 private final ExpressionParser parser = new SpelExpressionParser();
+	    private final StandardEvaluationContext context = new StandardEvaluationContext();
+
+	    public boolean validateAction(String action) {
+	        String expression = "#action matches '^[a-zA-Z]+$'";
+	        context.setVariable("action", action);
+	        return parser.parseExpression(expression).getValue(context, Boolean.class);
+	    }
+
+	    public boolean validateActionCode(String actionCode) {
+	        String expression = "#actionCode matches '^[a-zA-Z]+$'";
+	        context.setVariable("actionCode", actionCode);
+	        return parser.parseExpression(expression).getValue(context, Boolean.class);
+	    }
+
+	    public boolean validateSendersReference(String sendersReference) {
+	        String expression = "#sendersReference matches '^[A-Z]{3}-[0-9]{4}$'";
+	        context.setVariable("sendersReference", sendersReference);
+	        return parser.parseExpression(expression).getValue(context, Boolean.class);
+	    }
+
+	    public boolean validateEntityCode(String entityCode) {
+	        String expression = "#entityCode matches '^[A-Z]{4}[0-9]{3}$'";
+	        context.setVariable("entityCode", entityCode);
+	        return parser.parseExpression(expression).getValue(context, Boolean.class);
+	    }
+	    
+
+	    public String action(String action) {
+	    	String expression = "#action matches '^[a-zA-Z]+$' ? 'valid' : 'invalid'";
+	        context.setVariable("action", action);
+	        return parser.parseExpression(expression).getValue(context, String.class);
+			
+		}
+	    public String actionCode(String actionCode) {
+	    	String expression = "#actionCode matches '^[a-zA-Z]+$' ? 'valid' : 'invalid'";
+	        context.setVariable("actionCode", actionCode);
+	        return parser.parseExpression(expression).getValue(context, String.class);
+		}
+	    public String sendersReference(String sendersReference) {
+	    	String expression = "#sendersReference matches '^[A-Z]{3}-[0-9]{4}$' ? 'valid' : 'invalid'";
+	        context.setVariable("sendersReference", sendersReference);
+	        return parser.parseExpression(expression).getValue(context, String.class);
+			
+		}
+	    public String entityCode(String entityCode) {
+	    	String expression = "#entityCode matches '^[A-Z]{4}[0-9]{3}$' ? 'valid' : 'invalid'";
+	        context.setVariable("entityCode", entityCode);
+	        return parser.parseExpression(expression).getValue(context, String.class);
+			
+		}
+	}

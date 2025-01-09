@@ -1,0 +1,136 @@
+openapi: 3.0.0
+info:
+  title: FTL Check API
+  description: API for validating JSON and creating remittance entries.
+  version: 1.0.0
+  contact:
+    email: support@example.com
+servers:
+  - url: http://localhost:8080/
+    description: Local server
+paths:
+  /ftlCheck/create:
+    post:
+      summary: Create Remittance Entry
+      description: This endpoint is used to create a remittance entry.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    Remittance:
+                      type: object
+                      properties:
+                        sendersReference:
+                          type: string
+                          example: "TR-001001"
+                        valueDateCurrencyInterbankSettledAmount:
+                          type: object
+                          properties:
+                            valueDate:
+                              type: string
+                              format: date
+                              example: "2016-02-16"
+                            currency:
+                              type: string
+                              minLength: 3   # Minimum length of the currency code
+                              maxLength: 3   # Maximum length of the currency code
+                              example: "USD" # Example of the currency code (USD)
+                            interbankSettledAmount:
+                              type: number
+                              example: 9500.55
+                        currencyInstructedAmount:
+                          type: object
+                          properties:
+                            currency:
+                              type: string
+                              minLength: 3   # Minimum length of the currency code
+                              maxLength: 3   # Maximum length of the currency code
+                              example: "USD"
+                            amount:
+                              type: number
+                              example: 9500.55
+                        orderingCustomer:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: "AMALGA"
+                            accountNumber:
+                              type: string
+                              example: ""
+                            address:
+                              type: string
+                              example: ""
+                        beneficiaryCustomer:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: "ABC"
+                            accountNumber:
+                              type: string
+                              example: ""
+                            address:
+                              type: string
+                              example: ""
+                        remittanceInformation:
+                          type: object
+                          properties:
+                            information:
+                              type: string
+                              example: ""
+                        modeOfTransmission:
+                          type: array
+                          items:
+                            type: string
+                            example: "SW"
+                        detailsOfCharges:
+                          type: array
+                          items:
+                            type: string
+                            example: "OUR"
+                        additionaldata:
+                          type: object
+                          properties:
+                            transactionPurpose:
+                              type: string
+                              example: ""
+              required:
+                - data
+      responses:
+        '200':
+          description: Remittance entry created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Remittance entry created successfully."
+        '400':
+          description: Invalid input or missing fields.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Bad Request"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal Server Error"

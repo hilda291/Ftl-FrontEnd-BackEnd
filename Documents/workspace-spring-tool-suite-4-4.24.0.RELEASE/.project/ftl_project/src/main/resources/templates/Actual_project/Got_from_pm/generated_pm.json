@@ -1,0 +1,13 @@
+{
+    "ResponseHeader": {
+        "Service": "TI",
+        "Operation": "TFCPCCRT",
+        "Status": "SUCCEEDED",
+        "Details": {
+            "Warning": "Request for service: 'TI' operation: 'TFCPCCRT' does not return any response data"
+        },
+        "CorrelationId": "deabfbb3-587f-4011-b81c-d179d9a29b28",
+        "TargetSystem": "API",
+        "SourceSystem": "ZONE2"
+    }
+}

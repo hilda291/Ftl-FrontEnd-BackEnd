@@ -1,0 +1,738 @@
+To write comprehensive JUnit tests for the provided JsonToJsonController class, we'll cover the following:
+
+1. Controller's main method: generateXml
+
+
+2. Mock dependencies (JsonTOJsonService and DatabaseService) to test the logic in isolation.
+
+
+3. Test scenarios for successful execution, error cases, and edge cases.
+
+
+
+Here is a JUnit test class using Mockito for mocking dependencies:
+
+Test Class
+
+package com.example.ftl_project.Controller;
+
+import com.example.ftl_project.Service.DatabaseService;
+import com.example.ftl_project.Service.JsonTOJsonService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+class JsonToJsonControllerTest {
+
+    @Mock
+    private JsonTOJsonService jjService;
+
+    @Mock
+    private DatabaseService databaseService;
+
+    @InjectMocks
+    private JsonToJsonController controller;
+
+    private MockMvc mockMvc;
+
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    }
+
+    @Test
+    void testGenerateXml_Success() throws Exception {
+        // Mock dependencies
+        String jsonInput = "{\"key\":\"value\"}";
+        String ftlContent = "some FTL template";
+        String xmlOutput = "<xml>Data</xml>";
+        String theirReference = "REF001";
+        String masterID = "MASTER123";
+        String processedOutput = "{\"output\":\"final data\"}";
+
+        when(jjService.processTemplate(anyString(), anyString())).thenReturn(xmlOutput);
+        when(databaseService.fetchMasterRefIdList()).thenReturn(List.of(masterID));
+        when(jjService.fetchTheirReference(any())).thenReturn(theirReference);
+        when(JsonTOJsonService.processMockApi(anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(processedOutput);
+
+        // Perform the request
+        mockMvc.perform(post("/ftlCheck/JtoJ")
+                .content(jsonInput)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        // Verify interactions
+        verify(jjService, times(1)).processTemplate(anyString(), anyString());
+        verify(databaseService, times(1)).fetchMasterRefIdList();
+    }
+
+    @Test
+    void testGenerateXml_MissingMasterRefId() throws Exception {
+        // Mock dependencies
+        String jsonInput = "{\"key\":\"value\"}";
+        when(databaseService.fetchMasterRefIdList()).thenReturn(Collections.emptyList());
+
+        // Perform the request
+        mockMvc.perform(post("/ftlCheck/JtoJ")
+                .content(jsonInput)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
+
+        // Verify no further interactions
+        verify(jjService, never()).processTemplate(anyString(), anyString());
+    }
+
+    @Test
+    void testGenerateXml_ExceptionHandling() throws Exception {
+        // Mock dependencies
+        String jsonInput = "{\"key\":\"value\"}";
+        when(jjService.processTemplate(anyString(), anyString())).thenThrow(new RuntimeException("Processing Error"));
+
+        // Perform the request
+        mockMvc.perform(post("/ftlCheck/JtoJ")
+                .content(jsonInput)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
+
+        // Verify interactions
+        verify(jjService, times(1)).processTemplate(anyString(), anyString());
+    }
+
+    @Test
+    void testFetchMasterRefId_Success() {
+        List<String> mockIds = List.of("MASTER123", "MASTER456");
+        when(databaseService.fetchMasterRefIdList()).thenReturn(mockIds);
+
+        List<String> result = controller.fetchMasterRefId();
+
+        verify(databaseService, times(1)).fetchMasterRefIdList();
+        assert result.equals(mockIds);
+    }
+
+    @Test
+    void testDataForMasterID_Success() {
+        List<String> mockIds = List.of("MASTER123");
+        when(databaseService.fetchMasterRefIdList()).thenReturn(mockIds);
+
+        String result = controller.dataForMasterID();
+
+        verify(databaseService, times(1)).fetchMasterRefIdList();
+        assert result.equals("MASTER123");
+    }
+}
+
+Key Details of the Tests
+
+1. Success Scenarios:
+
+generateXml processes correctly when all dependencies provide valid responses.
+
+fetchMasterRefId and dataForMasterID return expected values.
+
+
+
+2. Error Handling:
+
+generateXml gracefully handles missing master reference IDs and throws an error for exceptions in service calls.
+
+
+
+3. Edge Cases:
+
+Empty database result for fetchMasterRefId.
+
+Exception thrown during processTemplate.
+
+
+
+
+Setup Instructions
+
+1. Add dependencies for JUnit 5, Mockito, and Spring MockMvc in your pom.xml or build.gradle.
+
+
+2. Ensure the directory structure aligns with Maven/Gradle conventions.
+
+
+3. Use the test class as a template to extend coverage for additional edge cases as needed.
+
+
+
+Would you like more details about configuring the test environment?+
+
+================================================================================================
+
+To write a comprehensive JUnit test for methods related to correlation IDs within your application, including generateCorrelationId and related operations in your JsonTOJsonService class, here's how you can proceed. Since you are already using Spring Boot, your test class can leverage Spring's testing utilities.
+
+Full JUnit Test for FtlProjectApplicationTests
+
+package com.example.ftl_project;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.example.ftl_project.Service.JsonTOJsonService;
+import com.example.ftl_project.Service.DatabaseService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class FtlProjectApplicationTests {
+
+    @Autowired
+    private JsonTOJsonService jsonToJsonService;
+
+    @Autowired
+    private DatabaseService databaseService;
+
+    @Test
+    void contextLoads() {
+        assertNotNull(jsonToJsonService, "JsonTOJsonService should be loaded in the application context.");
+        assertNotNull(databaseService, "DatabaseService should be loaded in the application context.");
+    }
+
+    @Test
+    void testGenerateCorrelationId() {
+        String correlationId = JsonTOJsonService.generateCorrelationId();
+        assertNotNull(correlationId, "Correlation ID should not be null.");
+        assertEquals(36, correlationId.length(), "Correlation ID should be a valid UUID.");
+    }
+
+    @Test
+    void testGenerateCorrelationIdAndAddToData() {
+        Map<String, Object> dataModel = new HashMap<>();
+        String correlationId = jsonToJsonService.generateCorrelationIdAndAddToData(dataModel);
+
+        assertNotNull(correlationId, "Generated correlation ID should not be null.");
+        assertEquals(correlationId, dataModel.get("correlationId"), "Correlation ID should be added to the data model.");
+    }
+
+    @Test
+    void testFetchDataMasterID() {
+        DatabaseService mockDatabaseService = mock(DatabaseService.class);
+        JsonTOJsonService mockService = new JsonTOJsonService(mockDatabaseService);
+
+        when(mockDatabaseService.fetchMasterRefIdList()).thenReturn(List.of("MASTER12345"));
+
+        String masterId = mockService.fetchDataMasterID();
+
+        assertNotNull(masterId, "Master ID should not be null.");
+        assertEquals("MASTER12345", masterId, "Master ID should match the mocked value.");
+    }
+
+    @Test
+    void testFetchTheirReference() throws Exception {
+        String sampleJson = "{ \"TFCPCCRT\": { \"Context\": { \"TheirReference\": \"TR-001001\" } } }";
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode rootNode = objectMapper.readTree(sampleJson);
+
+        String theirReference = jsonToJsonService.fetchTheirReference(rootNode);
+
+        assertEquals("TR-001001", theirReference, "TheirReference value should be extracted correctly.");
+    }
+}
+
+Key Points in the Test Class
+
+1. Spring Boot Context:
+
+The @SpringBootTest annotation initializes the application context for testing.
+
+
+
+2. Test Cases:
+
+testGenerateCorrelationId: Validates that generateCorrelationId creates a valid UUID.
+
+testGenerateCorrelationIdAndAddToData: Verifies that the correlation ID is correctly added to the data model.
+
+testFetchDataMasterID: Uses a mocked DatabaseService to test master ID retrieval logic.
+
+testFetchTheirReference: Checks JSON parsing logic for TheirReference.
+
+
+
+3. Mocking:
+
+mock(DatabaseService.class) is used to simulate database behavior without actually querying the database.
+
+
+
+4. Assertions:
+
+assertNotNull: Ensures objects are not null.
+
+assertEquals: Validates that expected and actual values match.
+
+
+
+
+This test structure ensures coverage of the key functionalities involving correlation IDs and the associated operations in your JsonTOJsonService class.
+=================================================================================================
+Below is a comprehensive JUnit test class that includes additional test cases to cover the functionality of the JsonToJsonController and its dependencies. These test cases include mocking the service layers and testing the core functionalities:
+
+package com.example.ftl_project;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.util.List;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.example.ftl_project.Controller.JsonToJsonController;
+import com.example.ftl_project.Service.DatabaseService;
+import com.example.ftl_project.Service.JsonTOJsonService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@SpringBootTest
+class FtlProjectApplicationTests {
+
+    @Mock
+    private JsonTOJsonService jjService;
+
+    @Mock
+    private DatabaseService databaseService;
+
+    @InjectMocks
+    private JsonToJsonController controller;
+
+    @Test
+    void testDataForMasterID() {
+        List<String> masterRefId = List.of("MASTER123");
+        when(databaseService.fetchMasterRefIdList()).thenReturn(masterRefId);
+
+        String result = controller.dataForMasterID();
+
+        verify(databaseService, times(1)).fetchMasterRefIdList();
+        assertEquals("MASTER123", result);
+    }
+
+    @Test
+    void testFetchMasterRefId() {
+        List<String> masterRefId = List.of("MASTER123", "MASTER456");
+        when(databaseService.fetchMasterRefIdList()).thenReturn(masterRefId);
+
+        List<String> result = controller.fetchMasterRefId();
+
+        verify(databaseService, times(1)).fetchMasterRefIdList();
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("MASTER123", result.get(0));
+    }
+
+    @Test
+    void testGenerateCorrelationId() {
+        String correlationId = JsonTOJsonService.generateCorrelationId();
+        assertNotNull(correlationId, "Correlation ID should not be null");
+        assertEquals(36, correlationId.length(), "Correlation ID should be a valid UUID");
+    }
+
+    @Test
+    void testProcessTemplate() {
+        String jsonContent = "{\"key\":\"value\"}";
+        String ftlContent = "Template content";
+        String expectedOutput = "Processed Template";
+
+        when(jjService.processTemplate(jsonContent, ftlContent)).thenReturn(expectedOutput);
+
+        String result = jjService.processTemplate(jsonContent, ftlContent);
+
+        assertNotNull(result);
+        assertEquals(expectedOutput, result);
+    }
+
+    @Test
+    void testGenerateXml_Success() throws Exception {
+        String jsonContent = "{\"key\":\"value\"}";
+        String xmlContent = "<xml>content</xml>";
+        String jsonResponse = "{\"json\":\"response\"}";
+
+        when(jjService.processTemplate(anyString(), anyString())).thenReturn(xmlContent);
+        when(jjService.transformXmlToJson(anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(jsonResponse);
+
+        String result = controller.generateXml(jsonContent);
+
+        assertNotNull(result);
+        assertTrue(result.contains("json"));
+        verify(jjService, times(1)).processTemplate(anyString(), anyString());
+    }
+
+    @Test
+    void testGenerateXml_Exception() {
+        String jsonContent = "{\"key\":\"value\"}";
+
+        when(jjService.processTemplate(anyString(), anyString())).thenThrow(new RuntimeException("Error"));
+
+        String result = controller.generateXml(jsonContent);
+
+        assertNotNull(result);
+        assertTrue(result.contains("Error processing template"));
+    }
+
+    @Test
+    void testFetchTheirReference() {
+        ObjectMapper mapper = new ObjectMapper();
+        String json = "{\"TFCPCCRT\":{\"Context\":{\"TheirReference\":\"REF123\"}}}";
+
+        try {
+            var rootNode = mapper.readTree(json);
+            String reference = jjService.fetchTheirReference(rootNode);
+
+            assertEquals("REF123", reference);
+        } catch (Exception e) {
+            fail("Exception occurred while parsing JSON: " + e.getMessage());
+        }
+    }
+}
+
+Key Points Covered:
+
+1. Mocked Dependencies: JsonTOJsonService and DatabaseService are mocked to isolate JsonToJsonController.
+
+
+2. Comprehensive Coverage:
+
+fetchMasterRefId and dataForMasterID methods.
+
+Static and instance methods in JsonTOJsonService.
+
+Exception handling in generateXml method.
+
+
+
+3. Validation:
+
+UUID format for generateCorrelationId.
+
+Proper invocation of mocked methods using verify.
+
+Correct handling of JSON processing with ObjectMapper.
+
+
+
+4. Error Scenarios:
+
+Added tests for exceptions in generateXml.
+
+
+
+
+These test cases ensure the correctness of the implementation, including its interactions with the service layers. You can extend them further based on edge cases or specific business logic requirements.
+=
+=
+=
+=
+=
+package com.example.ftl_project;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.example.ftl_project.Controller.JsonToJsonController;
+import com.example.ftl_project.Service.DatabaseService;
+import com.example.ftl_project.Service.JsonTOJsonService;
+@SpringBootTest
+class FtlProjectApplicationTests {
+	
+	    @Mock
+	    private JsonTOJsonService jjService;
+
+	    @Mock
+	    private DatabaseService databaseService;
+
+	    @InjectMocks
+	    private JsonToJsonController controller;
+
+	    @BeforeEach
+	    void setUp() {
+	        MockitoAnnotations.openMocks(this);
+	    }
+
+	    @Test
+	    void testDataForMasterID() {
+	        List<String> masterRefId = List.of("MASTER123");
+	        when(databaseService.fetchMasterRefIdList()).thenReturn(masterRefId);
+
+	        String result = controller.dataForMasterID();
+
+	        verify(databaseService, times(1)).fetchMasterRefIdList();
+	        assert result.equals("MASTER123");
+	    }
+	    
+	    @Test
+	    void testFetchMasterRefId() {
+	        List<String> masterRefId = List.of("MASTER123", "MASTER456");
+	        when(databaseService.fetchMasterRefIdList()).thenReturn(masterRefId);
+
+	        List<String> result = controller.fetchMasterRefId();
+
+	        verify(databaseService, times(1)).fetchMasterRefIdList();
+	        assertNotNull(result);
+	        assertEquals(2, result.size());
+	        assertEquals("MASTER123", result.get(0));
+	    }
+	    
+	    @Test
+	    void testGenerateCorrelationId() {
+	    	String correlationId=JsonTOJsonService.generateCorrelationId();
+	    	assertNotNull(correlationId, "Correlation Id should not be null");
+	    	assertEquals(36, correlationId.length(),"Correlation ID should be a valid UUID");
+	    }
+	    
+}
+==========================
+@Test
+    void testFetchTheirReference() throws IOException {
+        String jsonData = "{\"TFCPCCRT\":{\"Context\":{\"TheirReference\":\"TR-12345\"}}}";
+        JsonNode rootNode = new ObjectMapper().readTree(jsonData);
+        String theirReference = jsonTOJsonService.fetchTheirReference(rootNode);
+        assertEquals("TR-12345", theirReference);
+    }
+=============================
+private static final Logger logger = Logger.getLogger(BootApplicationTests.class.getName());
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+    public String fetchDataMasterID() {
+        List<String> masterRefId = databaseService.fetchMasterRefIdList();
+        if (masterRefId.isEmpty()) {
+        	 logger.warning("Master reference ID list is empty.");
+            return null;
+        }
+        return masterRefId.get(0);
+    }
+ ===============
+      
+	    public FtlProjectApplicationTests() {
+			// TODO Auto-generated constructor stub
+		}
+=========================================================
+@Test
+	    void testDataForMasterID() {
+	        List<String> masterRefId = List.of("MASTER123");
+	        when(databaseService.fetchMasterRefIdList()).thenReturn(masterRefId);
+
+	        String result = controller.dataForMasterID();
+
+	        verify(databaseService, times(1)).fetchMasterRefIdList();
+	        assertEquals("MASTER123", result);
+	    }
+	    
+	    @Test
+	    void testFetchDataMasterID() {
+	    	when(databaseService.fetchMasterRefIdList()).thenReturn(List.of("0132OCPC11000308"));
+	        String masterRefId = fetchDataMasterID();
+	        assertEquals("0132OCPC11000308", masterRefId);
+
+	        when(databaseService.fetchMasterRefIdList()).thenReturn(Collections.emptyList());
+	        String emptyMasterId = fetchDataMasterID();
+	        assertNull(emptyMasterId);
+	    }
+=======================================================================================
+(WITH-GET(0))
+package com.example.ftl_project;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.example.ftl_project.Controller.JsonToJsonController;
+import com.example.ftl_project.Service.DatabaseService;
+import com.example.ftl_project.Service.JsonTOJsonService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+@SpringBootTest
+class FtlProjectApplicationTests {
+	
+		@InjectMocks
+	    private JsonTOJsonService jjService;
+
+	    @Mock
+	    private DatabaseService databaseService;
+
+	    @InjectMocks
+	    private JsonToJsonController controller;
+
+	    private static final Logger logger = Logger.getLogger(FtlProjectApplicationTests.class.getName());
+
+	    @BeforeEach
+	    void setUp() {
+	        MockitoAnnotations.openMocks(this);
+	    }
+	    public String fetchDataMasterID() {
+	        List<String> masterRefId = databaseService.fetchMasterRefIdList();
+	        if (masterRefId.isEmpty()) {
+	        	 logger.warning("Master reference ID list is empty.");
+	            return null;
+	        }
+	        return masterRefId.get(0);
+	    }
+	    
+	    @Test
+	    void testFetchDataMasterID() {
+	    	when(databaseService.fetchMasterRefIdList()).thenReturn(List.of("0132OCPC11000308"));
+	        String masterRefId = fetchDataMasterID();
+	        assertEquals("0132OCPC11000308", masterRefId);
+
+	        when(databaseService.fetchMasterRefIdList()).thenReturn(Collections.emptyList());
+	        String emptyMasterId = fetchDataMasterID();
+	        assertNull(emptyMasterId);
+	    }
+	    
+		@Test
+	    void testGenerateCorrelationId() {
+	    	String correlationId=JsonTOJsonService.generateCorrelationId();
+	    	assertNotNull(correlationId, "Correlation Id should not be null");
+	    	assertEquals(36, correlationId.length(),"Correlation ID should be a valid UUID");
+	    }
+		
+		@Test
+	    void testGenerateCorrelationIdAndAddToData() {
+	        Map<String, Object> dataModel = mock(Map.class);
+	        String correlationId = jjService.generateCorrelationIdAndAddToData(dataModel);
+	        assertNotNull(correlationId);
+	        verify(dataModel).put("correlationId", correlationId);
+	    }
+
+	    
+	   @Test
+	   void testFetchTheirReference() throws IOException{
+		   String jsonData="{\"TFCPCCRT\":{\"Context\":{\"TheirReference\":\"TR-12345\"}}}";
+	        JsonNode rootNode = new ObjectMapper().readTree(jsonData);
+	        String theirReference = jjService.fetchTheirReference(rootNode);
+	        assertEquals("TR-12345",theirReference);
+		   
+	   }
+}
+==========================================================================================
+WITHOUT(get(0))
+package com.example.ftl_project;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.example.ftl_project.Controller.JsonToJsonController;
+import com.example.ftl_project.Service.DatabaseService;
+import com.example.ftl_project.Service.JsonTOJsonService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+@SpringBootTest
+class FtlProjectApplicationTests {
+	
+		@InjectMocks
+	    private JsonTOJsonService jjService;
+
+	    @Mock
+	    private DatabaseService databaseService;
+
+	    @InjectMocks
+	    private JsonToJsonController controller;
+
+	  
+	    @Test
+	    void testDataForMasterID() {
+	        List<String> masterRefId = List.of("MASTER123");
+	        when(databaseService.fetchMasterRefIdList()).thenReturn(masterRefId);
+
+	        String result = controller.dataForMasterID();
+
+	        verify(databaseService, times(1)).fetchMasterRefIdList();
+	        assertEquals("MASTER123", result);
+	    }
+	    
+		@Test
+	    void testGenerateCorrelationId() {
+	    	String correlationId=JsonTOJsonService.generateCorrelationId();
+	    	assertNotNull(correlationId, "Correlation Id should not be null");
+	    	assertEquals(36, correlationId.length(),"Correlation ID should be a valid UUID");
+	    }
+		
+		@Test
+	    void testGenerateCorrelationIdAndAddToData() {
+	        Map<String, Object> dataModel = mock(Map.class);
+	        String correlationId = jjService.generateCorrelationIdAndAddToData(dataModel);
+	        assertNotNull(correlationId);
+	        verify(dataModel).put("correlationId", correlationId);
+	    }
+
+	    
+	   @Test
+	   void testFetchTheirReference() throws IOException{
+		   String jsonData="{\"TFCPCCRT\":{\"Context\":{\"TheirReference\":\"TR-12345\"}}}";
+	        JsonNode rootNode = new ObjectMapper().readTree(jsonData);
+	        String theirReference = jjService.fetchTheirReference(rootNode);
+	        assertEquals("TR-12345",theirReference);
+		   
+	   }
+}

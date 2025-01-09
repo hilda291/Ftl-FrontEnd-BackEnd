@@ -1,0 +1,11 @@
+{
+	"Remittance": {
+		"value": {
+			"sendersReferenceId": " ",
+			"channelId": " ",
+			"masterReferenceId": " ",
+			"status": " ",
+			"message": " "
+		}
+	}
+}

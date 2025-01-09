@@ -1,0 +1,12 @@
+{
+	"RemittanceDetail": {
+		"value": {
+			"channelId": " ",
+			"customer": " ",
+			"isLive": " ",
+			"payAccount": " ",
+			"masterReferenceId": " ",
+			"paymentStatus": " "
+		}
+	}
+}

@@ -1,0 +1,224 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "Remittance": {
+          "type": "object",
+          "properties": {
+            "sendersReference": {
+              "type": "string"
+            },
+            "valueDateCurrencyInterbankSettledAmount": {
+              "type": "object",
+              "properties": {
+                "valueDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "message": {
+                    "pattern": "Should be in the format of: yyyy-mm-dd"
+                  }
+                },
+				"77843": {
+				                 "type": "string",
+				                 "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+				                 "message": {
+				                   "pattern": "Should be in the format of: yyyy-mm-dd"
+				                 }
+				               },
+                "currency": {
+                  "type": "string"
+                },
+                "interbankSettledAmount": {
+                  "type": "number",
+                  "minimum": 1,
+                  "message": {
+                    "minimum": "Must be greater than 0"
+                  }
+                }
+              },
+			 "oneOf": [
+				{
+				           "required": [
+				               "currency"
+				           ],
+				               "anyOf": [
+				                   {"required":["valueDate"]},
+				                   {"required":["interbankSettledAmount"]}
+				               ]
+				          
+				       }
+			 ]
+              "additionalProperties": false
+            },
+            "currencyInstructedAmount": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "currency",
+                "amount"
+              ],
+              "additionalProperties": false
+            },
+            "orderingCustomer": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "accountNumber": {
+                  "type": "string"
+                },
+                "address": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false
+            },
+            "beneficiaryCustomer": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "accountNumber": {
+                  "type": "string"
+                },
+                "address": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false
+            },
+            "remittanceInformation": {
+              "type": "object",
+              "properties": {
+                "information": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "information"
+              ],
+              "additionalProperties": false
+            },
+            "modeOfTransmission": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "detailsOfCharges": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "additionaldata": {
+              "type": "object",
+              "properties": {
+                "transactionPurpose": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "sendersReference",
+            "valueDateCurrencyInterbankSettledAmount",
+            "currencyInstructedAmount"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "Remittance"
+      ],
+      "additionalProperties": false
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "mimeType": {
+                "type": "string"
+              },
+              "extensionType": {
+                "type": "string"
+              },
+              "attachment_id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "exported_file_path": {
+                "type": "string"
+              },
+              "doc_id": {
+                "type": "string"
+              },
+              "dms_id": {
+                "type": "string"
+              },
+              "filesize": {
+                "type": "string"
+              },
+              "fileUom": {
+                "type": "string"
+              },
+              "encrypted": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "docContent": {
+            "type": "object",
+            "properties": {
+              "base64Encoded": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "data",
+    "documents"
+  ],
+  "additionalProperties": false
+}

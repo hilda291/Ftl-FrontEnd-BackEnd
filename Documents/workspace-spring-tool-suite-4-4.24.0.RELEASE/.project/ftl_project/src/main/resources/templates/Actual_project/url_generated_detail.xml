@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ServiceResponse xmlns="urn:control.services.tiplus2.misys.com" xmlns:ns2="urn:messages.service.ti.apps.tiplus2.misys.com" xmlns:ns3="urn:common.service.ti.apps.tiplus2.misys.com">
+    <ResponseHeader>
+        <Service>TI</Service>
+        <Operation>RetrieveMasterDetail</Operation>
+        <Status>SUCCEEDED</Status>
+        <CorrelationId>980980fdf75fkflhfkhfkh</CorrelationId>
+        <TargetSystem>API</TargetSystem>
+        <SourceSystem>ZONE2</SourceSystem>
+    </ResponseHeader>
+    <ns2:RetrieveMasterDetailResponse>
+        <ORMLOOKUP xmlns="" xmlns:ns4="urn:control.services.tiplus2.misys.com">
+            <MasterReference>0132OCPC11000308</MasterReference>
+            <PayAccount>9998888112 USD CN 001</PayAccount>
+            <Status/>
+            <PaymentStatus>New</PaymentStatus>
+            <IsLive>No</IsLive>
+            <Customer>AMALGA</Customer>
+        </ORMLOOKUP>
+    </ns2:RetrieveMasterDetailResponse>
+</ServiceResponse>

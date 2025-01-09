@@ -1,0 +1,328 @@
+To structure your Spring Boot application in a clean and modular way, it's a good idea to separate the database operations into a dedicated service class. Here's how you can split the logic into multiple classes: one for database operations (DAO), and another for processing business logic (like generating the CorrelationId and handling FreeMarker templates).
+
+### 1. *Create a Separate DAO Class for Database Operations*
+
+This class will handle all database-related operations, including querying the Oracle database.
+
+#### DatabaseService.java
+
+java
+package com.example.ftl_project.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+public class DatabaseService {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    // Method to fetch MasterRefId from Oracle database
+    public String fetchMasterRefId() {
+        // SQL query to retrieve the MasterRefId (modify this as per your actual requirement)
+        String sql = "SELECT SUBSTR(GWY.ERR_TXT, INSTR(GWY.ERR_TXT, 'GW') + 2) FROM YOUR_TABLE GW WHERE ROWNUM = 1";
+
+        try {
+            // Fetching the MasterRefId
+            return jdbcTemplate.queryForObject(sql, String.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;  // Handle error, maybe log or return a default value
+        }
+    }
+}
+
+
+### 2. *Create a Service Class for Business Logic and Template Processing*
+
+This class will generate the CorrelationId, fetch the MasterRefId from the DatabaseService, and handle FreeMarker template processing.
+
+#### JsonTOJsonService.java
+
+java
+package com.example.ftl_project.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+import java.io.StringWriter;
+import java.io.StringReader;
+import java.util.Map;
+import java.util.UUID;
+
+@Service
+public class JsonTOJsonService {
+
+    @Autowired
+    private DatabaseService databaseService;  // Injecting the DatabaseService
+
+    // Method to generate a CorrelationId (UUID)
+    public static String generateCorrelationId() {
+        return UUID.randomUUID().toString();
+    }
+
+    // Method to process the FreeMarker template with dynamic values
+    public String processTemplate(String jsonContent, String ftlContent) {
+        StringWriter writer = new StringWriter();
+        try {
+            // Set up FreeMarker configuration
+            Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
+            Template template = new Template("template_xml", new StringReader(ftlContent), cfg);
+
+            // Convert JSON content into Map using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+
+            // Generate CorrelationId
+            String correlationId = generateCorrelationId();
+            // Fetch MasterRefId from database using DatabaseService
+            String masterRefId = databaseService.fetchMasterRefId();
+
+            // Add CorrelationId and MasterRefId to the data model for template processing
+            dataModel.put("correlationId", correlationId);
+            dataModel.put("masterReferenceId", masterRefId);
+
+            // Process the FreeMarker template with the data model
+            template.process(dataModel, writer);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return writer.toString();
+    }
+}
+
+
+### 3. *Controller Class for Handling API Requests*
+
+This class will handle the HTTP requests, interact with the service class, and return the appropriate response.
+
+#### JsonToJsonController.java
+
+java
+package com.example.ftl_project.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import com.example.ftl_project.Service.JsonTOJsonService;
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+    @Autowired
+    private JsonTOJsonService jjService;  // Injecting the JsonTOJsonService class
+
+    // Endpoint to convert JSON to XML with dynamic CorrelationId and MasterRefId
+    @PostMapping(value = "/JtoX", consumes = "application/json", produces = "application/json")
+    public String generateXml(@RequestBody String jsonContent) {
+        try {
+            // Load the FreeMarker template for XML (provide correct path)
+            String ftlContent = new String(Files.readAllBytes(Paths.get("src/main/resources/templates/Actual_project/toXML_create.ftl")));
+
+            // Generate XML output with CorrelationId and MasterRefId injected into the template
+            String xmlOutput = jjService.processTemplate(jsonContent, ftlContent);
+
+            // Return the generated XML output
+            return xmlOutput;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error processing template: " + e.getMessage();
+        }
+    }
+}
+
+
+### 4. **Update application.properties for Database Connection**
+
+Ensure that your application.properties file contains the necessary database connection properties. These will be used to configure the JdbcTemplate.
+
+#### application.properties
+
+properties
+# Oracle Database Configuration
+spring.datasource.url=jdbc:oracle:thin:@bsit-srv04:1521:xe  # Replace with your Oracle DB connection URL
+spring.datasource.username=ZONE2                      # Replace with your DB username
+spring.datasource.password=ZONE2                      # Replace with your DB password
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+spring.datasource.platform=oracle                      # Spring Boot needs to know it's an Oracle DB
+
+# Connection Pool (HikariCP is the default in Spring Boot)
+spring.datasource.hikari.pool-name=HikariCP
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.connection-timeout=30000
+spring.datasource.hikari.max-lifetime=600000
+
+# FreeMarker settings
+spring.freemarker.enabled=true
+
+
+### 5. *Folder Structure (for clarity)*
+
+Here's a suggested folder structure to organize your code:
+
+
+src
+ └── main
+      ├── java
+      │     └── com
+      │         └── example
+      │             └── ftl_project
+      │                 ├── Controller
+      │                 │     └── JsonToJsonController.java
+      │                 ├── Service
+      │                 │     ├── JsonTOJsonService.java
+      │                 │     └── DatabaseService.java
+      │                 └── application.properties
+      └── resources
+           └── templates
+               └── Actual_project
+                   └── toXML_create.ftl
+
+
+### 6. *Run the Application*
+
+- *Start the application* by running the Spring Boot application in your IDE or from the command line using:
+
+  bash
+  mvn spring-boot:run
+  
+
+- *Send a POST request* to the /ftlCheck/JtoX endpoint with a JSON payload. You can use Postman or curl to test.
+
+#### Example Request:
+
+json
+{
+  "action": "findByIdentifier",
+  "actionCode": "RetrieveMasterDetail",
+  "filterClause": {
+    "sendersReference": "ORM-0012"
+  },
+  "entityCode": "BSIT004"
+}
+
+
+#### Expected Response:
+
+xml
+<?xml version="1.0" standalone="yes"?>
+<ServiceRequest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:m="urn:messages.service.ti.apps.tiplus2.misys.com" xmlns:c="urn:common.service.ti.apps.tiplus2.misys.com" xmlns="urn:control.services.tiplus2.misys.com">
+    <RequestHeader>
+        <Service>TI</Service>
+        <Operation>RetrieveMasterDetail</Operation>
+        <Credentials>
+            <Name>SUPERVISOR</Name>
+            <Password>Password</Password>
+            <Certificate>Certificate</Certificate>
+            <Digest>Digest</Digest>
+        </Credentials>
+        <ReplyFormat>FULL</ReplyFormat>
+        <ReplyTarget>ReplyTarget</ReplyTarget>
+        <TargetSystem>ZONE2</TargetSystem>
+        <SourceSystem>API</SourceSystem>
+        <NoRepair>Y</NoRepair>
+        <NoOverride>Y</NoOverride>
+        <CorrelationId>generated-correlation-id</CorrelationId>
+        <TransactionControl>NONE</TransactionControl>
+    </RequestHeader>
+    <m:RetrieveMasterDetailRequest>
+        <m:DefinitionID>ORMLOOKUP</m:DefinitionID>
+        <m:MasterReference>
+            <c:BehalfOfBranch>CITY</c:BehalfOfBranch>
+            <c:Reference>masterReferenceId-from-db</c:Reference>
+        </m:MasterReference>
+    </m:RetrieveMasterDetailRequest>
+</ServiceRequest>
+
+
+---
+
+### Summary
+
+- *DatabaseService*: Responsible for all database interactions (e.g., fetching MasterRefId from the Oracle DB).
+- *JsonTOJsonService*: Handles business logic, including generating the CorrelationId and processing the FreeMarker templates.
+- *JsonToJsonController*: Exposes the REST endpoint for converting JSON to XML, utilizing the services.
+
+By following this structure, your application is modular, easy to maintain, and clear in terms of responsibility separation.
+
+
+
+
+<?xml version="1.0" standalone="yes"?>
+<ServiceRequest xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:m='urn:messages.service.ti.apps.tiplus2.misys.com' xmlns:c='urn:common.service.ti.apps.tiplus2.misys.com' xmlns='urn:control.services.tiplus2.misys.com'>
+	<RequestHeader>
+		<Service>TI</Service>
+		<Operation>RetrieveMasterDetail</Operation>
+		<Credentials>
+			<Name>SUPERVISOR</Name>
+			<Password>Password</Password>
+			<Certificate>Certificate</Certificate>
+			<Digest>Digest</Digest>
+		</Credentials>
+		<ReplyFormat>FULL</ReplyFormat>
+		<ReplyTarget>ReplyTarget</ReplyTarget>
+		<TargetSystem>ZONE2</TargetSystem>
+		<SourceSystem>API</SourceSystem>
+		<NoRepair>Y</NoRepair>
+		<NoOverride>Y</NoOverride>
+		<CorrelationId>980980fdf7
+        5fkflhfkhfkh</CorrelationId>
+		<TransactionControl>NONE</TransactionControl>
+	</RequestHeader>
+	<m:RetrieveMasterDetailRequest>
+		<m:DefinitionID>ORMLOOKUP</m:DefinitionID>
+		<m:MasterReference>
+			<c:BehalfOfBranch>CITY</c:BehalfOfBranch>
+			<c:Reference>0132OCPC11000308</c:Reference>
+		</m:MasterReference>
+	</m:RetrieveMasterDetailRequest>
+</ServiceRequest>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

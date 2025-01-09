@@ -1,0 +1,258 @@
+@Test 
+	void testProcessMockApi() throws ApiProcessingException, TemplateException{
+		
+		String url="http://bsit-srv04:8003/tiplus2-deploy2/hello";
+		String requestBody="";
+		String ftlFilePath ="";
+		String theirReference ="";
+		String dataMasterId ="";
+		
+		String expectedOutput ="";
+		
+		String result=jjService.processMockApi(url, requestBody, ftlFilePath, theirReference, dataMasterId);
+		assertEquals(expectedOutput,result);
+		
+	}
+	
+	
+	=========================================
+	
+	@Test
+	void testGenerateXml() {
+		String jsonContent="{\n"
+				+ "    \"data\": {\n"
+				+ "        \"Remittance\": {\n"
+				+ "            \"sendersReference\": \"TR-001001\",\n"
+				+ "            \"valueDateCurrencyInterbankSettledAmount\": {\n"
+				+ "                \"valueDate\": \"2016-02-16\",\n"
+				+ "                \"currency\": \"USD\",\n"
+				+ "                \"interbankSettledAmount\": 9500.55\n"
+				+ "            },\n"
+				+ "            \"currencyInstructedAmount\": {\n"
+				+ "                \"currency\": \"USD\",\n"
+				+ "                \"amount\": 9500.55\n"
+				+ "            },\n"
+				+ "            \"orderingCustomer\": {\n"
+				+ "                \"name\": \"AMALGA\",\n"
+				+ "                \"accountNumber\": \"\",\n"
+				+ "                \"address\": \"\"\n"
+				+ "            },\n"
+				+ "            \"beneficiaryCustomer\": {\n"
+				+ "                \"name\": \"ABC\",\n"
+				+ "                \"accountNumber\": \"\",\n"
+				+ "                \"address\": \"\"\n"
+				+ "            },\n"
+				+ "            \"remittanceInformation\": {\n"
+				+ "                \"information\": \"\"\n"
+				+ "            },\n"
+				+ "            \"modeOfTransmission\": [\n"
+				+ "                \"SW\"\n"
+				+ "            ],\n"
+				+ "            \"detailsOfCharges\": [\n"
+				+ "                \"OUR\"\n"
+				+ "            ],\n"
+				+ "            \"additionaldata\": {\n"
+				+ "                \"transactionPurpose\": \"\"\n"
+				+ "            }\n"
+				+ "        }\n"
+				+ "    },\n"
+				+ "    \"documents\": [\n"
+				+ "        {\n"
+				+ "            \"metadata\": {\n"
+				+ "                \"mimeType\": \"\",\n"
+				+ "                \"extensionType\": \"\",\n"
+				+ "                \"attachment_id\": \"\",\n"
+				+ "                \"description\": \"\",\n"
+				+ "                \"filename\": \"\",\n"
+				+ "                \"type\": \"\",\n"
+				+ "                \"title\": \"\",\n"
+				+ "                \"exported_file_path\": \"\",\n"
+				+ "                \"doc_id\": \"\",\n"
+				+ "                \"dms_id\": \"\",\n"
+				+ "                \"filesize\": \"\",\n"
+				+ "                \"fileUom\": \"\",\n"
+				+ "                \"encrypted\": \"\"\n"
+				+ "            },\n"
+				+ "            \"docContent\": {\n"
+				+ "                \"base64Encoded\": \"\"\n"
+				+ "            }\n"
+				+ "        }\n"
+				+ "    ]\n"
+				+ "}";
+		
+		
+	}
+	
+	
+========================================================================================================
+@Test
+	void testGenerateXml()throws Exception {
+		
+		String url="http://bsit-srv04:8003/tiplus2-deploy2/hello";
+		String requestBody="<?xml version=\"1.0\" standalone=\"yes\"?>\n"
+				+ "<ServiceRequest xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:m=\"urn:messages.service.ti.apps.tiplus2.misys.com\" xmlns:c=\"urn:common.service.ti.apps.tiplus2.misys.com\" xmlns=\"urn:control.services.tiplus2.misys.com\">\n"
+				+ "	<RequestHeader>\n"
+				+ "		<Service>TI</Service>\n"
+				+ "		<Operation>TFCPCCRT</Operation>\n"
+				+ "		<Credentials>\n"
+				+ "			<Name>LDS</Name>\n"
+				+ "			<Password>Password</Password>\n"
+				+ "			<Certificate>Certificate</Certificate>\n"
+				+ "			<Digest>Digest</Digest>\n"
+				+ "		</Credentials>\n"
+				+ "		<ReplyFormat>FULL</ReplyFormat>\n"
+				+ "		<ReplyTarget>ReplyTarget</ReplyTarget>  \n"
+				+ "		<TargetSystem>ZONE2</TargetSystem>\n"
+				+ "		<SourceSystem>API</SourceSystem>\n"
+				+ "		<NoRepair>Y</NoRepair>\n"
+				+ "		<NoOverride>Y</NoOverride>\n"
+				+ "		<CorrelationId>5751d2e2-8b81-43f4-9b30-35b07e1be207</CorrelationId>\n"
+				+ "		<TransactionControl>NONE</TransactionControl>\n"
+				+ "	</RequestHeader>\n"
+				+ "	<ns2:TFCPCCRT xmlns:ns2=\"urn:messages.service.ti.apps.tiplus2.misys.com\" xmlns=\"urn:control.services.tiplus2.misys.com\" xmlns:ns4=\"urn:custom.service.ti.apps.tiplus2.misys.com\" xmlns:ns3=\"urn:common.service.ti.apps.tiplus2.misys.com\">\n"
+				+ "		<ns2:Context>\n"
+				+ "			<ns3:Branch>CITY</ns3:Branch>\n"
+				+ "			<ns3:Customer>AMALGA</ns3:Customer>\n"
+				+ "			<ns3:Product>CPCI</ns3:Product>\n"
+				+ "			<ns3:Event>PCIC</ns3:Event>\n"
+				+ "			<ns3:TheirReference>TR-001001</ns3:TheirReference>\n"
+				+ "			<ns3:BehalfOfBranch>CITY</ns3:BehalfOfBranch>\n"
+				+ "		</ns2:Context>\n"
+				+ "		<ns2:Sender>\n"
+				+ "			<ns3:Customer>AMALGA</ns3:Customer>\n"
+				+ "			<ns3:Reference>TR-001001</ns3:Reference>\n"
+				+ "		</ns2:Sender>\n"
+				+ "		<ns2:Remitter>\n"
+				+ "			<ns3:Customer>AMALGA</ns3:Customer>\n"
+				+ "			<ns3:Reference>TR-001001</ns3:Reference>\n"
+				+ "		</ns2:Remitter>\n"
+				+ "		<ns2:RemitterAmount>\n"
+				+ "			<ns3:Amount>9500.55</ns3:Amount>\n"
+				+ "			<ns3:Currency>USD</ns3:Currency>\n"
+				+ "		</ns2:RemitterAmount>\n"
+				+ "		<ns2:BeneficiaryAmount>\n"
+				+ "			<ns3:Amount>9500.55</ns3:Amount>\n"
+				+ "			<ns3:Currency>USD</ns3:Currency>\n"
+				+ "		</ns2:BeneficiaryAmount>\n"
+				+ "		<ns2:BenChargesFor>B</ns2:BenChargesFor>\n"
+				+ "		<ns2:ReceiveDate>2016-02-16</ns2:ReceiveDate>\n"
+				+ "		<ns2:PaymentDate>2016-02-16</ns2:PaymentDate>\n"
+				+ "		<ns2:Beneficiary>\n"
+				+ "			<ns3:NameAddress>1/ABC/US</ns3:NameAddress>\n"
+				+ "		</ns2:Beneficiary>\n"
+				+ "		<ns2:BenAccountNo>BENE</ns2:BenAccountNo>\n"
+				+ "		<ns2:BeneficiaryBank>\n"
+				+ "			<ns3:NameAddress>ABC</ns3:NameAddress>\n"
+				+ "		</ns2:BeneficiaryBank>\n"
+				+ "		<ns2:PaymentMethod>SW</ns2:PaymentMethod>\n"
+				+ "		<ns2:eBankMasterRef/>\n"
+				+ "	</ns2:TFCPCCRT>\n"
+				+ "</ServiceRequest>";
+		String ftlFilePath ="{\n"
+				+ "	\"Remittance\": {\n"
+				+ "		\"value\": {\n"
+				+ "			\"sendersReferenceId\": \"${theirReference}\",\n"
+				+ "			\"channelId\": \"${ResponseHeader.CorrelationId}\",\n"
+				+ "			\"masterReferenceId\": \"${masterId}\",\n"
+				+ "			\"status\": \"${ResponseHeader.Status}\",\n"
+				+ "			\"message\": \"${ResponseHeader.Details.Warning}\"\n"
+				+ "		}\n"
+				+ "	}\n"
+				+ "}\n"
+				+ "";
+		String theirReference ="TR-001001";
+		String dataMasterId ="0132OCPC11000308";
+		
+		String expectedOutput ="{\n"
+				+ "	\"Remittance\": {\n"
+				+ "		\"value\": {\n"
+				+ "			\"sendersReferenceId\": \"TR-001001\",\n"
+				+ "			\"channelId\": \"5751d2e2-8b81-43f4-9b30-35b07e1be207\",\n"
+				+ "			\"masterReferenceId\": \"0132OCPC11000308\",\n"
+				+ "			\"status\": \"SUCCEEDED\",\n"
+				+ "			\"message\": \"Request for service: 'TI' operation: 'TFCPCCRT' does not return any response data\"\n"
+				+ "		}\n"
+				+ "	}\n"
+				+ "}\n"
+				+ "";
+		
+		String result=jjService.processMockApi(url, requestBody, ftlFilePath, theirReference, dataMasterId);
+		assertEquals(expectedOutput,result);
+		
+	}
+==================================================================================
+@Test
+	void testGenerateXml() throws IOException, TemplateException, RestClientException, ApiProcessingException {
+		String jsonContent=new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\input_create.json")));
+		
+		String theirReference ="TR-001001";
+		String dataMasterID ="0132OCPC11000308";
+		String ftlFilePath = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toXML_create.ftl")));
+		String mockUrl = "http://bsit-srv04:8003/tiplus2-deploy2/hello";
+		String xmlOutput=jjService1.processTemplate(jsonContent,ftlFilePath);
+
+		String  expectedXmlOutput="<?xml version=\"1.0\" standalone=\"yes\"?>\n"
+				+ "<ServiceRequest xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:m=\"urn:messages.service.ti.apps.tiplus2.misys.com\" xmlns:c=\"urn:common.service.ti.apps.tiplus2.misys.com\" xmlns=\"urn:control.services.tiplus2.misys.com\">\n"
+				+ "	<RequestHeader>\n"
+				+ "		<Service>TI</Service>\n"
+				+ "		<Operation>TFCPCCRT</Operation>\n"
+				+ "		<Credentials>\n"
+				+ "			<Name>LDS</Name>\n"
+				+ "			<Password>Password</Password>\n"
+				+ "			<Certificate>Certificate</Certificate>\n"
+				+ "			<Digest>Digest</Digest>\n"
+				+ "		</Credentials>\n"
+				+ "		<ReplyFormat>FULL</ReplyFormat>\n"
+				+ "		<ReplyTarget>ReplyTarget</ReplyTarget>  \n"
+				+ "		<TargetSystem>ZONE2</TargetSystem>\n"
+				+ "		<SourceSystem>API</SourceSystem>\n"
+				+ "		<NoRepair>Y</NoRepair>\n"
+				+ "		<NoOverride>Y</NoOverride>\n"
+				+ "		<CorrelationId>b1a869d5-903a-4976-b362-81409d92d2c6</CorrelationId>\n"
+				+ "		<TransactionControl>NONE</TransactionControl>\n"
+				+ "	</RequestHeader>\n"
+				+ "	<ns2:TFCPCCRT xmlns:ns2=\"urn:messages.service.ti.apps.tiplus2.misys.com\" xmlns=\"urn:control.services.tiplus2.misys.com\" xmlns:ns4=\"urn:custom.service.ti.apps.tiplus2.misys.com\" xmlns:ns3=\"urn:common.service.ti.apps.tiplus2.misys.com\">\n"
+				+ "		<ns2:Context>\n"
+				+ "			<ns3:Branch>CITY</ns3:Branch>\n"
+				+ "			<ns3:Customer>AMALGA</ns3:Customer>\n"
+				+ "			<ns3:Product>CPCI</ns3:Product>\n"
+				+ "			<ns3:Event>PCIC</ns3:Event>\n"
+				+ "			<ns3:TheirReference>TR-001001</ns3:TheirReference>\n"
+				+ "			<ns3:BehalfOfBranch>CITY</ns3:BehalfOfBranch>\n"
+				+ "		</ns2:Context>\n"
+				+ "		<ns2:Sender>\n"
+				+ "			<ns3:Customer>AMALGA</ns3:Customer>\n"
+				+ "			<ns3:Reference>TR-001001</ns3:Reference>\n"
+				+ "		</ns2:Sender>\n"
+				+ "		<ns2:Remitter>\n"
+				+ "			<ns3:Customer>AMALGA</ns3:Customer>\n"
+				+ "			<ns3:Reference>TR-001001</ns3:Reference>\n"
+				+ "		</ns2:Remitter>\n"
+				+ "		<ns2:RemitterAmount>\n"
+				+ "			<ns3:Amount>9500.55</ns3:Amount>\n"
+				+ "			<ns3:Currency>USD</ns3:Currency>\n"
+				+ "		</ns2:RemitterAmount>\n"
+				+ "		<ns2:BeneficiaryAmount>\n"
+				+ "			<ns3:Amount>9500.55</ns3:Amount>\n"
+				+ "			<ns3:Currency>USD</ns3:Currency>\n"
+				+ "		</ns2:BeneficiaryAmount>\n"
+				+ "		<ns2:BenChargesFor>B</ns2:BenChargesFor>\n"
+				+ "		<ns2:ReceiveDate>2016-02-16</ns2:ReceiveDate>\n"
+				+ "		<ns2:PaymentDate>2016-02-16</ns2:PaymentDate>\n"
+				+ "		<ns2:Beneficiary>\n"
+				+ "			<ns3:NameAddress>1/ABC/US</ns3:NameAddress>\n"
+				+ "		</ns2:Beneficiary>\n"
+				+ "		<ns2:BenAccountNo>BENE</ns2:BenAccountNo>\n"
+				+ "		<ns2:BeneficiaryBank>\n"
+				+ "			<ns3:NameAddress>ABC</ns3:NameAddress>\n"
+				+ "		</ns2:BeneficiaryBank>\n"
+				+ "		<ns2:PaymentMethod>SW</ns2:PaymentMethod>\n"
+				+ "		<ns2:eBankMasterRef/>\n"
+				+ "	</ns2:TFCPCCRT>\n"
+				+ "</ServiceRequest>";
+		assertEquals(xmlOutput,expectedXmlOutput);
+		
+		
+	//	String expectedJsonOtput=  JsonTOJsonService.processMockApi(mockUrl, xmlOutput, ftlFilePath, theirReference, dataMasterID);
+
+	}

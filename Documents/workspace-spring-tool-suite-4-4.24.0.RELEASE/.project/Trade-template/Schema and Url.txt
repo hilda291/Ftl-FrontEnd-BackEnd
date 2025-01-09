@@ -1,0 +1,19 @@
+Ti Url:
+
+http://bsit-srv04:8003/tiplus2-deploy2/hello
+
+DataBase:
+======================
+Name: TI_ZONE2
+IP :bsit-srv04
+Port : 1521
+SID:xe
+UserName:ZONE2
+Password:ZONE2
+
+
+Query for MasterRefID:
+
+SELECT SUBSTR(GWY.ERR_TXT,INSTR(GWY.ERR_TXT,'Master', -1, 1)+7,16) AS MASTER_REF FROM  GWYIN GWY WHERE THEIR_REF ='' And GWY.MESS_TYPE='';
+
+SELECT SUBSTR(GWY.ERR_TXT,INSTR(GWY.ERR_TXT,'Master', -1, 1)+7,16) AS MASTER_REF FROM  GWYIN GWY WHERE THEIR_REF ='TR-001001' And GWY.MESS_TYPE='TFCPCCRT';

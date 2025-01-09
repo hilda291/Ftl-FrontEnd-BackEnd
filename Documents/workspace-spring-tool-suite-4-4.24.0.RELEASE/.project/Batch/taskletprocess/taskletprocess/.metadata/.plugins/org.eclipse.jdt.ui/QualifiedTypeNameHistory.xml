@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+    <fullyQualifiedTypeName name="org.springframework.boot.autoconfigure.SpringBootApplication"/>
+    <fullyQualifiedTypeName name="org.springframework.batch.core.launch.JobLauncher"/>
+    <fullyQualifiedTypeName name="org.springframework.batch.core.step.tasklet.Tasklet"/>
+    <fullyQualifiedTypeName name="org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration"/>
+    <fullyQualifiedTypeName name="org.springframework.batch.core.JobExecution"/>
+    <fullyQualifiedTypeName name="org.springframework.batch.core.Job"/>
+    <fullyQualifiedTypeName name="org.springframework.scheduling.annotation.EnableScheduling"/>
+    <fullyQualifiedTypeName name="javax.annotation.PostConstruct"/>
+    <fullyQualifiedTypeName name="org.springframework.batch.core.step.builder.TaskletStepBuilder"/>
+    <fullyQualifiedTypeName name="org.springframework.batch.core.job.builder.SimpleJobBuilder"/>
+</qualifiedTypeNameHistroy>

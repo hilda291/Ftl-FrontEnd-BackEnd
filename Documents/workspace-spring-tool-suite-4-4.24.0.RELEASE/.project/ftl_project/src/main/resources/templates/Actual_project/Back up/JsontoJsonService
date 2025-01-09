@@ -1,0 +1,416 @@
+package com.example.ftl_project.Service;
+
+import java.io.StringWriter;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+import org.json.JSONObject;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+@Service
+public class JsonTOJsonService {
+
+	public String processTemplate(String jsonContent, String ftlContent) {
+		StringWriter writer = new StringWriter();
+		try {
+			Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
+			Template template = new Template("template_xml", new StringReader(ftlContent), cfg);
+
+			ObjectMapper objectMapper = new ObjectMapper();
+			Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+
+			template.process(dataModel, writer);
+		} catch (IOException | TemplateException e) {
+			e.printStackTrace();
+		}
+		return writer.toString();
+
+	}
+
+	public static String processMockApi(String url, String requestBody, String ftlFilePath) throws Exception {
+	    RestTemplate restTemplate = new RestTemplate();
+
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.add("Content-Type", "application/xml");
+	    HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+	    ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+	    if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+	        String xmlResponse = response.getBody();
+	        
+	        XmlMapper xmlMapper = new XmlMapper();
+            Map<String, Object> data = xmlMapper.readValue(xmlResponse, Map.class);
+            
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonContent = objectMapper.writeValueAsString(data);
+            
+            StringWriter out = new StringWriter();
+	        try {
+	        	Configuration cfg = new Configuration(Configuration.VERSION_2_3_32);
+
+	            Template template = new Template("template_json", new StringReader(ftlFilePath), cfg);
+
+	            
+	            Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+		        System.out.println(dataModel);
+		       
+	           
+	            template.process(dataModel, out);
+	        }
+	        catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	        
+	            
+	            return out.toString();
+	       
+	    } else {
+	        throw new Exception("Failed to fetch the mock URL response.");
+	    }
+	}
+}
+=============================================================================
+package com.example.ftl_project.Service;
+
+import java.io.StringWriter;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+import org.json.JSONObject;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+@Service
+public class JsonTOJsonService {
+
+	public String processTemplate(String jsonContent, String ftlContent) {
+		StringWriter writer = new StringWriter();
+		try {
+			Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
+			Template template = new Template("template_xml", new StringReader(ftlContent), cfg);
+
+			ObjectMapper objectMapper = new ObjectMapper();
+			Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+
+			template.process(dataModel, writer);
+		} catch (IOException | TemplateException e) {
+			e.printStackTrace();
+		}
+		return writer.toString();
+
+	}
+
+	public static String processMockApi(String url, String requestBody, String ftlFilePath,String theirReference) throws Exception {
+	    RestTemplate restTemplate = new RestTemplate();
+
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.add("Content-Type", "application/xml");
+	    HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+	    ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+	    if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+	        String xmlResponse = response.getBody();
+	        
+	        XmlMapper xmlMapper = new XmlMapper();
+            Map<String, Object> data = xmlMapper.readValue(xmlResponse, Map.class);
+            
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonContent = objectMapper.writeValueAsString(data);
+            
+            StringWriter out = new StringWriter();
+	        try {
+	        	Configuration cfg = new Configuration(Configuration.VERSION_2_3_32);
+
+	            Template template = new Template("template_json", new StringReader(ftlFilePath), cfg);
+
+	            
+	            Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+	            dataModel.put("theirReference", theirReference);
+		        System.out.println(dataModel);
+		       
+	           
+	            template.process(dataModel, out);
+	        }
+	        catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	        
+	            return out.toString();
+	       
+	    } else {
+	        throw new Exception("Failed to fetch the mock URL response.");
+	    }
+	}
+	
+}
+==================== WITH CORRELATION - FULL
+package com.example.ftl_project.Service;
+
+import java.io.StringWriter;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+import org.json.JSONObject;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+@Service
+public class JsonTOJsonService {
+	
+	public static String generateCorrelationId() {
+        UUID uuid = UUID.randomUUID();
+        
+        return uuid.toString();
+    }
+
+	public String processTemplate(String jsonContent, String ftlContent) {
+		StringWriter writer = new StringWriter();
+		try {
+			Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
+			Template template = new Template("template_xml", new StringReader(ftlContent), cfg);
+
+			ObjectMapper objectMapper = new ObjectMapper();
+			Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+
+			String correlationId = generateCorrelationId();
+	        dataModel.put("correlationId", correlationId);
+	        
+			template.process(dataModel, writer);
+		} catch (IOException | TemplateException e) {
+			e.printStackTrace();
+		}
+		return writer.toString();
+
+	}
+
+	public static String processMockApi(String url, String requestBody, String ftlFilePath, String theirReference) throws Exception {
+	    RestTemplate restTemplate = new RestTemplate();
+
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.add("Content-Type", "application/xml");
+	    HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+	    ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+	    if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+	        String xmlResponse = response.getBody();
+
+	        XmlMapper xmlMapper = new XmlMapper();
+	        Map<String, Object> data = xmlMapper.readValue(xmlResponse, Map.class);
+
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        String jsonContent = objectMapper.writeValueAsString(data);
+
+	        String correlationId = generateCorrelationId();
+
+	        Map<String, Object> finalJson = objectMapper.readValue(jsonContent, Map.class);
+	        Map<String, Object> remittanceDetail = (Map<String, Object>) finalJson.get("RemittanceDetail");
+	        Map<String, Object> value = (Map<String, Object>) remittanceDetail.get("value");
+	        value.put("channelId", correlationId);  // Adding the generated CorrelationId as channelId
+
+	        
+	        String finalJsonString = objectMapper.writeValueAsString(finalJson);
+
+	        StringWriter out = new StringWriter();
+	        try {
+	            Configuration cfg = new Configuration(Configuration.VERSION_2_3_32);
+	            Template template = new Template("template_json", new StringReader(ftlFilePath), cfg);
+
+	            Map<String, Object> dataModel = objectMapper.readValue(finalJsonString, Map.class);
+	            dataModel.put("theirReference", theirReference); // Add the theirReference to the data model
+
+	            template.process(dataModel, out);
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+
+	        return out.toString();  
+	    } else {
+	        throw new Exception("Failed to fetch the mock URL response.");
+	    }
+	}
+
+	
+	
+}
+
+==================================================
+Final
+==================================================
+
+package com.example.ftl_project.Service;
+
+import java.io.StringWriter;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+import org.json.JSONObject;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+@Service
+public class JsonTOJsonService {
+	
+	public static String generateCorrelationId() {
+        UUID uuid = UUID.randomUUID();
+        
+        return uuid.toString();
+    }
+
+	public String processTemplate(String jsonContent, String ftlContent) {
+		StringWriter writer = new StringWriter();
+		 try{
+	            Configuration confi = new Configuration(Configuration.VERSION_2_3_31);
+	            Template templ = new Template("template", new StringReader(ftlContent), confi);
+	            ObjectMapper objMapper = new ObjectMapper();
+	            Map<String, Object> dataModel = objMapper.readValue(jsonContent, Map.class);
+	            
+	            String CorrelationId = generateCorrelationId();
+		        dataModel.put("correlationId", CorrelationId);
+	            templ.process(dataModel, writer);
+	        } catch (IOException | TemplateException e) {
+	            e.printStackTrace();
+	        }
+
+	        return writer.toString();
+
+	}
+
+	public static String processMockApi(String url, String requestBody, String ftlFilePath, String theirReference) throws Exception {
+		  RestTemplate restTemplate = new RestTemplate();
+		  
+	        HttpHeaders headers = new HttpHeaders();
+	        
+	        headers.add("Content-Type", "application/xml");
+	        
+	        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+	        
+	        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+	        
+	        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+	        	
+	            String xmlResponse = response.getBody();
+	            
+	            XmlMapper xmlMapper = new XmlMapper();
+	            
+	            Map<String, Object> data = xmlMapper.readValue(xmlResponse, Map.class);
+	            
+	            ObjectMapper objectMapper = new ObjectMapper();
+	            
+	            String jsonContent = objectMapper.writeValueAsString(data);
+	            
+	            StringWriter out = new StringWriter();
+
+	            try {
+	                Configuration cfg = new Configuration(Configuration.VERSION_2_3_32);
+	                Template template = new Template("template", new StringReader(ftlFilePath), cfg);
+	                Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+	                dataModel.put("theirReference", theirReference);
+	               System.out.println(dataModel);
+	                template.process(dataModel, out);
+	            }
+	            catch (IOException e) {
+	                e.printStackTrace();
+
+	            }
+	            return out.toString();
+	        } else {
+	        throw new Exception("Failed to fetch the mock URL response.");
+	    }
+	}
+	
+}

@@ -1,0 +1,217 @@
+To make the required changes in your code and implement the necessary logic for extracting sendersReferenceId, channelId (from Correlation ID), and masterReferenceId (from the database), I'll walk through the modifications required in both your *Controller* and *Service* classes. Additionally, I'll provide the logic for connecting to the database and fetching the masterReferenceId based on the provided SQL query.
+
+Here's the updated code for your *Service* and *Controller* classes:
+
+### Updated JsonTOJsonService Class
+
+java
+package com.example.ftl_project.Service;
+
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import org.json.JSONObject;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+
+@Service
+public class JsonTOJsonService {
+
+    // Method to fetch masterReferenceId from Database
+    private String fetchMasterReferenceId() throws Exception {
+        String masterReferenceId = null;
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            // Establish database connection
+            conn = DriverManager.getConnection(
+                    "jdbc:oracle:thin:@bsit-srv04:1521:xe", "ZONE2", "ZONE2");
+
+            String query = "SELECT SUBSTR(GWY.ERR_TXT, INSTR(GWY.ERR_TXT, 'MasterRefID:') + 12, 20) AS MasterRefID " +
+                    "FROM GWY WHERE ROWNUM = 1"; // Adjust this query as needed
+            stmt = conn.prepareStatement(query);
+            rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                masterReferenceId = rs.getString("MasterRefID");
+            }
+        } catch (Exception e) {
+            throw new Exception("Database query failed: " + e.getMessage());
+        } finally {
+            if (rs != null) rs.close();
+            if (stmt != null) stmt.close();
+            if (conn != null) conn.close();
+        }
+        return masterReferenceId;
+    }
+
+    // Method to process the template
+    public String processTemplate(String jsonContent, String ftlContent) {
+        StringWriter writer = new StringWriter();
+        try {
+            Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
+            Template template = new Template("template_xml", new StringReader(ftlContent), cfg);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+
+            template.process(dataModel, writer);
+        } catch (IOException | TemplateException e) {
+            e.printStackTrace();
+        }
+        return writer.toString();
+    }
+
+    // Method to process the mock API and retrieve the final JSON with required fields
+    public String processMockApi(String url, String requestBody, String ftlFilePath) throws Exception {
+        RestTemplate restTemplate = new RestTemplate();
+        String xmlResponse = restTemplate.postForObject(url, requestBody, String.class);
+
+        XmlMapper xmlMapper = new XmlMapper();
+        Map<String, Object> data = xmlMapper.readValue(xmlResponse, Map.class);
+
+        // Extracting the sendersReferenceId and channelId (from correlation ID)
+        String sendersReferenceId = extractSendersReferenceId(data);
+        String channelId = extractCorrelationId(data);
+        String masterReferenceId = fetchMasterReferenceId();
+
+        // Construct the final response JSON
+        Map<String, Object> finalJson = new HashMap<>();
+        Map<String, Object> remittanceMap = new HashMap<>();
+        Map<String, Object> valueMap = new HashMap<>();
+
+        valueMap.put("sendersReferenceId", sendersReferenceId);
+        valueMap.put("channelId", channelId);
+        valueMap.put("masterReferenceId", masterReferenceId);
+        valueMap.put("status", "Success");
+        valueMap.put("message", "Transaction processed successfully");
+
+        remittanceMap.put("value", valueMap);
+        finalJson.put("Remittance", remittanceMap);
+
+        // Convert finalJson to JSON string
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(finalJson);
+    }
+
+    // Method to extract sendersReferenceId from XML data
+    private String extractSendersReferenceId(Map<String, Object> data) {
+        // Adjust extraction logic based on the structure of your XML data
+        Map<String, Object> context = (Map<String, Object>) data.get("Context");
+        return (String) context.get("TheirReference");
+    }
+
+    // Method to extract CorrelationId (used as channelId)
+    private String extractCorrelationId(Map<String, Object> data) {
+        Map<String, Object> requestHeader = (Map<String, Object>) data.get("RequestHeader");
+        return (String) requestHeader.get("CorrelationId");
+    }
+}
+
+
+### Updated JsonToJsonController Class
+
+java
+package com.example.ftl_project.Controller;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import com.example.ftl_project.Service.JsonTOJsonService;
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+    @Autowired
+    private JsonTOJsonService jjService;
+
+    @PostMapping(value = "/JtoX", consumes = "application/json", produces="application/json")
+    public String generateJson(@RequestBody String jsonContent) {
+        try {
+            // Load the FTL templates for XML and JSON
+            String ftlContentXML = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toXML_create.ftl")));
+            String ftlFilePathJson = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toJson_create.ftl")));
+
+            // Call the service method to generate the XML
+            String mockUrl = "http://bsit-srv04:8003/tiplus2-deploy2/hello";
+            String xmlOutput = jjService.processTemplate(jsonContent, ftlContentXML);
+
+            // Process the mock API to generate the final JSON
+            String result = jjService.processMockApi(mockUrl, xmlOutput, ftlFilePathJson);
+
+            return result; // Return the generated JSON
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error processing template: " + e.getMessage();
+        }
+    }
+}
+
+
+### Explanation of Changes
+
+1. **Fetching masterReferenceId from the database**:
+   - A new method fetchMasterReferenceId() was added in the JsonTOJsonService class. This method connects to the Oracle database and executes the provided SQL query to extract the masterReferenceId.
+   
+2. **Extracting sendersReferenceId and channelId**:
+   - The method extractSendersReferenceId() is used to extract the TheirReference (which corresponds to sendersReferenceId) from the XML response data.
+   - The method extractCorrelationId() extracts the CorrelationId from the RequestHeader section of the XML data, which will be used as channelId.
+
+3. *Final JSON Construction*:
+   - In the processMockApi() method, the final response JSON is created with the extracted sendersReferenceId, channelId, and masterReferenceId. A successful transaction message and status are also added.
+
+4. *Controller*:
+   - The generateJson() method in the JsonToJsonController class orchestrates the process by calling the service methods to process the template and mock API.
+
+### Additional Notes:
+
+- *Database Connection*: The connection string assumes you are connecting to an Oracle database using the oracle.jdbc.OracleDriver. Ensure that the necessary dependencies for Oracle JDBC are included in your pom.xml.
+- *Error Handling*: Proper error handling is included to log any issues during the database connection or API processing.
+- *Adjust SQL Query*: The SQL query provided is a placeholder. Ensure that it correctly retrieves the masterReferenceId from your database.
+
+### Dependencies (Maven Example)
+Ensure you have the following dependencies in your pom.xml for Oracle DB and other required libraries:
+
+```xml
+<dependency>
+    <groupId>com.oracle.database.jdbc</groupId>
+    <artifactId>ojdbc8</artifactId>
+    <version>19.8.0.0</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.13.0</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <

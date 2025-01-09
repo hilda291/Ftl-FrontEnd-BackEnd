@@ -1,0 +1,204 @@
+To connect an Oracle database to your Spring Boot application, execute a SQL query to fetch data (like `masterReferenceId`), and return the results in the final JSON structure, you can follow these steps:
+
+### Step 1: Add Oracle JDBC Driver to Your Project
+
+You need to add Oracle's JDBC driver dependency to your project to allow Spring Boot to connect to Oracle.
+
+#### For **Maven**:
+
+Add this dependency in your `pom.xml` file:
+
+```xml
+<dependency>
+    <groupId>com.oracle.database.jdbc</groupId>
+    <artifactId>ojdbc8</artifactId>
+    <version>19.8.0.0</version>  <!-- Or the version you need -->
+</dependency>
+```
+
+#### For **Gradle**:
+
+Add this to your `build.gradle` file:
+
+```groovy
+implementation 'com.oracle.database.jdbc:ojdbc8:19.8.0.0'  // Adjust the version as needed
+```
+
+### Step 2: Configure Oracle Database Connection in `application.properties` or `application.yml`
+
+You need to configure your Oracle database connection in Spring Boot. Below is the typical configuration in `application.properties`:
+
+```properties
+# Oracle Database connection details
+spring.datasource.url=jdbc:oracle:thin:@//your-oracle-hostname:1521/your-SID
+spring.datasource.username=your-username
+spring.datasource.password=your-password
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+
+# JPA Configuration (if using JPA)
+spring.jpa.database-platform=org.hibernate.dialect.Oracle12cDialect
+spring.jpa.hibernate.ddl-auto=update  # or 'none', 'validate' based on your needs
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+```
+
+Replace the placeholders (`your-oracle-hostname`, `your-SID`, `your-username`, and `your-password`) with actual values for your Oracle database.
+
+### Step 3: Create a Service to Execute Queries
+
+You need to create a service class to handle querying the database. You can use `JdbcTemplate` or `NamedParameterJdbcTemplate` from Spring JDBC to execute your SQL query.
+
+Here's an example of a service that fetches the `masterReferenceId` from the database using the provided filter parameters and generates the desired output:
+
+#### `DatabaseQueryService.java`:
+
+```java
+package com.example.ftl_project.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import java.util.Map;
+
+@Service
+public class DatabaseQueryService {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    public Map<String, Object> getMasterReferenceId(String sendersReference, String entityCode) {
+        // Define the SQL query to fetch masterReferenceId based on filter parameters
+        String sql = "SELECT masterReferenceId, customer, isLive, payAccount, paymentStatus " +
+                     "FROM your_table_name " +
+                     "WHERE sendersReference = ? AND entityCode = ?";
+
+        // Execute the query and return the result as a map (assuming one result)
+        return jdbcTemplate.queryForMap(sql, sendersReference, entityCode);
+    }
+}
+```
+
+In this service:
+- `JdbcTemplate.queryForMap` executes the SQL query and returns a result as a `Map<String, Object>`.
+- Replace `your_table_name` with the actual table name and modify the SQL query based on your database schema.
+
+### Step 4: Modify Controller to Call the Service and Return JSON
+
+Your controller should call the `DatabaseQueryService` to get the data from the database and then format the response in the required JSON structure.
+
+#### `JsonToJsonController.java`:
+
+```java
+package com.example.ftl_project.Controller;
+
+import com.example.ftl_project.Service.DatabaseQueryService;
+import com.example.ftl_project.Service.JsonTOJsonService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+    @Autowired
+    private JsonTOJsonService jjService;
+
+    @Autowired
+    private DatabaseQueryService databaseQueryService;
+
+    @PostMapping(value = "/JtoX", consumes = "application/json", produces = "application/json")
+    public String generateJson(@RequestBody String jsonContent) {
+        try {
+            // Extract filter parameters from the input JSON (e.g., sendersReference, entityCode)
+            Map<String, Object> inputMap = new ObjectMapper().readValue(jsonContent, Map.class);
+            String sendersReference = (String) ((Map<String, Object>) inputMap.get("filterClause")).get("sendersReference");
+            String entityCode = (String) inputMap.get("entityCode");
+
+            // Query the database for masterReferenceId and other details
+            Map<String, Object> dbData = databaseQueryService.getMasterReferenceId(sendersReference, entityCode);
+
+            // Prepare final JSON response
+            Map<String, Object> finalJson = new HashMap<>();
+            Map<String, Object> remittanceDetail = new HashMap<>();
+            Map<String, Object> value = new HashMap<>();
+            value.put("channelId", generateCorrelationId());  // Assuming generateCorrelationId() is a method you already have
+            value.put("customer", dbData.get("customer"));
+            value.put("isLive", dbData.get("isLive"));
+            value.put("payAccount", dbData.get("payAccount"));
+            value.put("masterReferenceId", dbData.get("masterReferenceId"));
+            value.put("paymentStatus", dbData.get("paymentStatus"));
+
+            remittanceDetail.put("value", value);
+            finalJson.put("RemittanceDetail", remittanceDetail);
+
+            // Convert the final JSON map to a string
+            ObjectMapper objectMapper = new ObjectMapper();
+            String finalJsonString = objectMapper.writeValueAsString(finalJson);
+
+            // Return the final JSON response
+            return finalJsonString;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error processing the request: " + e.getMessage();
+        }
+    }
+
+    private String generateCorrelationId() {
+        // Generate and return a correlation ID (this can be customized based on your requirements)
+        return "CORR-" + System.currentTimeMillis();
+    }
+}
+```
+
+### Explanation:
+1. **Database Query**: The `DatabaseQueryService` fetches the `masterReferenceId` and other relevant details from the Oracle database using a query.
+2. **JSON Response**: The controller takes the input JSON, extracts the necessary values, performs the database query, and formats the result into the required JSON structure:
+   - `"channelId"` is generated dynamically (you can replace it with your logic).
+   - Other fields like `"customer"`, `"isLive"`, `"payAccount"`, `"masterReferenceId"`, and `"paymentStatus"` are fetched from the database.
+
+### Step 5: Test the Endpoint
+
+Once the database is properly configured and your application is running, you can test the `/ftlCheck/JtoX` endpoint by sending the following JSON:
+
+#### Input JSON (POST request):
+
+```json
+{
+  "action": "findByIdentifier",
+  "actionCode": "RetrieveMasterDetail",
+  "filterClause": {
+    "sendersReference": "ORM-0012"
+  },
+  "entityCode": "BSIT004"
+}
+```
+
+This should return a JSON response like:
+
+#### Output JSON (Response):
+
+```json
+{
+  "RemittanceDetail": {
+    "value": {
+      "channelId": "CORR-1639173646738",
+      "customer": "Customer Name",
+      "isLive": "Yes",
+      "payAccount": "Account Number",
+      "masterReferenceId": "MR001234",
+      "paymentStatus": "Success"
+    }
+  }
+}
+```
+
+### Final Notes:
+- **Oracle Database Connection**: Ensure that the Oracle database is running and accessible from your Spring Boot application.
+- **Query Adjustments**: Modify the SQL query in the service (`getMasterReferenceId`) according to your actual database schema.
+- **Error Handling**: Add proper error handling and logging as needed to catch and log any issues with database queries or JSON processing.
+
+This setup will allow you to connect to your Oracle database, execute queries, and return the results in the expected JSON format.

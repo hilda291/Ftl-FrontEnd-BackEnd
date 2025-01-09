@@ -1,0 +1,2 @@
+ftl_Project: 
+mvn clean verify sonar:sonar -Dsonar.projectKey=ftl -Dsonar.projectName='ftl' -Dsonar.host.url=http://localhost:9000 -Dsonar.token=sqp_bf5634b12c2a6466698cb5d4f75dca60e79ff25b

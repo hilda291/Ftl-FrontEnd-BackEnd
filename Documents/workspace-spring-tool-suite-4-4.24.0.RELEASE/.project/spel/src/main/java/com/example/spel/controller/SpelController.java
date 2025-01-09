@@ -1,0 +1,43 @@
+package com.example.spel.controller;
+
+import java.io.IOException;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.spel.service.DetailSchemaValidation;
+import com.example.spel.service.SchemaValidation;
+import com.example.spel.entity.SpelEntity;
+import com.example.spel.service.SpelService;
+
+@RestController
+public class SpelController {
+
+	@Autowired
+	private SpelService spelService;
+	
+	@Autowired
+	private DetailSchemaValidation detailSchemaValidation;
+	
+	@PostMapping("/schemaValidate")
+	public String SchemaValidation(@RequestBody String inputJson) throws IOException {
+		String schemajsonm="D:\\Bluescope\\.project\\spel\\src\\main\\resources\\templates\\schema_detail.json";
+		return detailSchemaValidation.validateJson(inputJson, schemajsonm);
+
+	}
+	
+	 @PostMapping("/validate")
+	    public ResponseEntity<Object> validateInput(@RequestBody SpelEntity inputJson){
+		 Map<String,String> validationErrors=spelService.validateInput(inputJson);
+		 if(validationErrors.isEmpty()) {
+			 return ResponseEntity.ok("Input is valid");
+		 }
+		 else {
+			 return ResponseEntity.badRequest().body(validationErrors);
+		 }
+	 }
+}

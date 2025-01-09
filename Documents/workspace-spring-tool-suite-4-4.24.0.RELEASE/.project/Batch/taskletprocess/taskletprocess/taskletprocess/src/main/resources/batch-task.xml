@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans 
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/task 
+                           http://www.springframework.org/schema/task/spring-task.xsd
+                           http://www.springframework.org/schema/batch 
+                           http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <!-- Enable Scheduling -->
+    <task:annotation-driven />
+
+    <!-- Transaction Manager -->
+    <bean id="transactionManager"
+          class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+
+    <!-- Job Repository -->
+    <bean id="jobRepository"
+          class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+        <property name="transactionManager" ref="transactionManager" />
+    </bean>
+
+    <!-- Job Launcher -->
+    <bean id="jobLauncher"
+          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+    </bean>
+
+    <!-- Define Tasklets -->
+    <bean id="sourceTasklet" class="com.tasklet.taskletprocess.process.SourceTasklet" />
+    <bean id="sampleTasklet" class="com.tasklet.taskletprocess.process.SampleTasklet" />
+
+    <!-- Define Job for sourceTasklet -->
+    <batch:job id="sourceTaskletJob">
+        <batch:step id="sourceStep">
+            <batch:tasklet ref="sourceTasklet" />
+        </batch:step>
+    </batch:job>
+
+    <!-- Define Job for sampleTasklet -->
+    <batch:job id="sampleTaskletJob">
+        <batch:step id="sampleStep">
+            <batch:tasklet ref="sampleTasklet" />
+        </batch:step>
+    </batch:job>
+
+    <!-- Wire JobLauncherApp for sourceTasklet -->
+    <bean id="jobLauncherAppSource" class="com.tasklet.taskletprocess.process.JobLauncherApp">
+        <constructor-arg ref="jobLauncher" />
+        <constructor-arg ref="sourceTaskletJob" />
+    </bean>
+
+    <!-- Wire JobLauncherApp for sampleTasklet -->
+    <bean id="jobLauncherAppSample" class="com.tasklet.taskletprocess.process.JobLauncherApp">
+        <constructor-arg ref="jobLauncher" />
+        <constructor-arg ref="sampleTaskletJob" />
+    </bean>
+
+    <!-- Schedule cron for sourceTasklet every 2 seconds -->
+    <task:scheduled-tasks>
+        <task:scheduled ref="jobLauncherAppSource" method="scheduleTasklet" cron="0/2 * * * * *" />
+    </task:scheduled-tasks>
+
+    <!-- Schedule cron for sampleTasklet every 3 seconds -->
+    <task:scheduled-tasks>
+        <task:scheduled ref="jobLauncherAppSample" method="scheduleTasklet" cron="0/3 * * * * *" />
+    </task:scheduled-tasks>
+
+</beans>

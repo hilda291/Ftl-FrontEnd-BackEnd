@@ -1,0 +1,74 @@
+package com.example.ftl_project.jsonValidation;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
+public class JsonValidation {
+
+    public static void main(String[] args) {
+    	 String jsonFilePath = "D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\Json Validation\\inputFORcreate.json";   // JSON file containing your data
+         String schemaFilePath = "D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\Json Validation\\schema_create.json"; // JSON Schema file
+
+        try {
+            validateJsonAgainstSchema(jsonFilePath, schemaFilePath);
+        } catch (IOException e) {
+            System.out.println("Error reading files: " + e.getMessage());
+        }
+    }
+
+    private static void validateJsonAgainstSchema(String jsonFilePath, String schemaFilePath) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+
+        JsonNode jsonNode = mapper.readTree(new File(jsonFilePath));
+        JsonNode schemaNode = mapper.readTree(new File(schemaFilePath));
+
+        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
+        JsonSchema schema = factory.getSchema(schemaNode);
+
+        Set<ValidationMessage> errors = schema.validate(jsonNode);
+
+        if (errors.isEmpty()) {
+            System.out.println("Valid JSON!");
+        } else {
+            System.out.println("Invalid JSON!");
+
+            HashMap<String, List<String>> additionalPropertiesMap = new HashMap<>();
+            List<String> additionalProperties = new ArrayList<>();
+            List<String> otherErrors = new ArrayList<>();
+
+            for (ValidationMessage error : errors) {
+                String errorMessage = error.getMessage();
+
+                if (errorMessage.contains("is not defined in the schema")) {
+                    String path = errorMessage.split(":")[0];
+                    String propertyName = path.substring(path.lastIndexOf('.') + 1);
+                    additionalProperties.add(propertyName);
+                } else {
+                    otherErrors.add(errorMessage);
+                }
+            }
+
+            if (!additionalProperties.isEmpty()) {
+              System.out.println("\nInvalid Additional Properties:");
+              System.out.println(additionalProperties);
+
+//                additionalPropertiesMap.put("other properties", additionalProperties);
+//                System.out.println("\nInvalid Additional Properties:");
+//                System.out.println(additionalPropertiesMap);
+            }
+
+            if (!otherErrors.isEmpty()) {
+                System.out.println("\nOther Validation Errors:");
+                otherErrors.forEach(System.out::println);
+            }
+        }
+    }
+}

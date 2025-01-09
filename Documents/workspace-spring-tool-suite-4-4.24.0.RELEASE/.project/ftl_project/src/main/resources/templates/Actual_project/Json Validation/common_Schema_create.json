@@ -1,0 +1,13 @@
+{
+	"currency": {
+		"type": "string",
+		"minLength": 2,
+		"maxLength": 3,
+		"pattern": "^[A-Z]{3}$",
+		"message": {
+			"minLength": "Must start from 2.",
+			"maxLength": "Max length is 3.",
+			"pattern": "The currency must be in Alphabetics"
+		}
+	}
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "beneficiaryCustomer": {
+      "type": "object",
+      "properties": {
+        "Account": {
+          "type": "string"
+        },
+        "Name": {
+          "type": "string"
+        },
+        "Add1": {
+          "type": "string"
+        },
+        "Add2": {
+          "type": "string"
+        },
+        "Add3": {
+          "type": "string"
+        },
+        "IdentifierCode": {
+          "type": "string"
+        }
+      },
+      "required": ["Account"], 
+      "anyOf": [
+        {
+          "required": ["Name"],
+          "dependencies": {
+            "Name": ["Add1", "Add2", "Add3"]
+          },
+		  
+		  "message":{
+			"dependencies":"When Name is given all the three(3) addresses are mandatory",
+		  		"required":"Either Name or IdentifierCode is important"
+		  	  }
+        },
+        {
+          "properties": {
+            "IdentifierCode": { "type": "string" }
+          },
+          "required": ["IdentifierCode"],
+		  "message":{
+			"required":"Either Name with 3 addresses or IdentifierCode is important"
+		  }
+        }
+      ]
+    }
+  },
+  "required": ["beneficiaryCustomer"]
+}

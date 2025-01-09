@@ -1,0 +1,946 @@
+To create a method that generates a Correlation ID using UUID.randomUUID(), you can encapsulate the UUID generation logic inside a method. A correlation ID is typically used for tracking requests across distributed systems, so you want to ensure the ID is unique and easily traceable.
+
+Here's an example of how you can do this in Java:
+
+### Code Example:
+
+java
+import java.util.UUID;
+
+public class CorrelationIdGenerator {
+
+    // Method to generate a new Correlation ID
+    public static String generateCorrelationId() {
+        // Generate a random UUID
+        UUID uuid = UUID.randomUUID();
+        
+        // Return the string representation of the UUID as the Correlation ID
+        return uuid.toString();
+    }
+
+    public static void main(String[] args) {
+        // Example usage
+        String correlationId = generateCorrelationId();
+        System.out.println("Generated Correlation ID: " + correlationId);
+    }
+}
+
+
+### Explanation:
+1. *UUID.randomUUID()*: This method generates a random universally unique identifier (UUID) based on cryptographically strong pseudo-random data.
+2. *String Representation*: UUID is returned as a String since correlation IDs are usually used as strings in logs or headers.
+
+### How it works:
+- The generateCorrelationId() method generates a unique UUID every time it's called.
+- The result is then returned as a string, which you can use as a correlation ID for tracking requests, logs, or any other distributed tracing purposes.
+
+### Example Output:
+
+Generated Correlation ID: 6a61c8c8-4b7d-4821-a1cf-8a2908f3193c
+
+
+### Use Case:
+You can call the generateCorrelationId() method whenever you need a new correlation ID, such as when starting a new request in a web service, for example, to trace logs or propagate through a microservice architecture.
+
+=====
+To address your requirements, I'll walk you through how to implement the `CorrelationId` generation and modify the given service and controller classes. The aim is to:
+
+1. **Generate a Correlation ID** (using `UUID.randomUUID()`).
+2. **Inject it into the final XML response** (or JSON output) as part of the request.
+3. **Modify the Oracle database query part** and provide an overall solution.
+
+Here's a detailed breakdown:
+
+### Step 1: Generating a Correlation ID
+
+You can generate the `CorrelationId` inside a utility method. This can be done using `UUID.randomUUID()`. We will modify your service class (`JsonTOJsonService`) to include this functionality.
+
+### Step 2: Updating the XML and JSON output
+In the process, you will need to inject this `CorrelationId` into the XML and possibly the final JSON as well.
+
+### Step 3: Modifying Service to Handle Database Interaction and UUID
+
+You might want to also consider fetching data from the Oracle DB (`TI_ZONE2`) based on the query for `MasterRefID`. I'll assume the query will be executed when needed.
+
+### Updated Code:
+
+#### 1. **Service Class (`JsonTOJsonService.java`)**
+
+Here’s how you can update your `JsonTOJsonService` to generate the `CorrelationId` and modify the XML creation logic.
+
+```java
+package com.example.ftl_project.Service;
+
+import java.io.StringWriter;
+import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import org.json.JSONObject;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+@Service
+public class JsonTOJsonService {
+
+    // Method to generate a CorrelationId
+    public static String generateCorrelationId() {
+        return UUID.randomUUID().toString();
+    }
+
+    // Method to process the template
+    public String processTemplate(String jsonContent, String ftlContent) {
+        StringWriter writer = new StringWriter();
+        try {
+            Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
+            Template template = new Template("template_xml", new StringReader(ftlContent), cfg);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+
+            // Generate CorrelationId and add it to the data model
+            String correlationId = generateCorrelationId();
+            dataModel.put("correlationId", correlationId);
+
+            // Process template
+            template.process(dataModel, writer);
+        } catch (IOException | TemplateException e) {
+            e.printStackTrace();
+        }
+        return writer.toString();
+    }
+
+    // Mock API Call (you may adjust based on actual integration)
+    public static String processMockApi(String url, String requestBody, String ftlFilePath) throws Exception {
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Type", "application/xml");
+        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            String xmlResponse = response.getBody();
+            return xmlResponse;
+        } else {
+            throw new Exception("Failed to fetch the mock URL response.");
+        }
+    }
+}
+```
+
+#### 2. **Controller Class (`JsonToJsonController.java`)**
+
+In your controller, after receiving the JSON request, you can generate the XML and then call the mock API. The `CorrelationId` will be automatically inserted by the service.
+
+```java
+package com.example.ftl_project.Controller;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.ftl_project.Service.JsonTOJsonService;
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+    @Autowired
+    private JsonTOJsonService jjService;
+
+    @PostMapping(value = "/JtoX", consumes = "application/json", produces = "application/json")
+    public String generateXml(@RequestBody String jsonContent) {
+        try {
+            // Load FTL template for XML
+            String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\path\\to\\your\\template\\toXML_create.ftl")));
+            String mockUrl = "http://bsit-srv04:8003/tiplus2-deploy2/hello";
+            
+            // Process the template and add the correlation ID
+            String xmlOutput = jjService.processTemplate(jsonContent, ftlContent);
+            System.out.println("Generated XML Output: " + xmlOutput);
+
+            // Load FTL template for the final JSON (if needed)
+            String ftlFilePath = new String(Files.readAllBytes(Paths.get("D:\\path\\to\\your\\template\\toJson_create.ftl")));
+
+            // Call mock API with XML output
+            String result = jjService.processMockApi(mockUrl, xmlOutput, ftlFilePath);
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error processing template: " + e.getMessage();
+        }
+    }
+}
+```
+
+### Explanation of Changes:
+1. **`generateCorrelationId()` Method**: This method generates a unique Correlation ID using `UUID.randomUUID()` and returns it as a string.
+   
+2. **Injecting `CorrelationId` into the Data Model**: Inside the `processTemplate()` method, I’ve added the generated `CorrelationId` to the `dataModel`. This will ensure that the `CorrelationId` is injected into your final XML when using FreeMarker.
+
+3. **XML and JSON Processing**: The `processTemplate()` method now handles injecting the correlation ID directly into the XML. The controller (`JsonToJsonController`) then uses this method and passes the generated XML to the mock API.
+
+4. **Oracle Database Connection**: The example assumes you are using `RestTemplate` to call external services. If you need to query the Oracle DB for `MasterRefID`, you can use JDBC or JPA in the service class. Below is a sample code snippet to query an Oracle database using JDBC.
+
+#### 3. **Oracle Database Query Example (Optional)**
+
+If you need to fetch `MasterRefID` from Oracle, you can add a method in `JsonTOJsonService`:
+
+```java
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+public class DatabaseService {
+
+    public String fetchMasterRefId() {
+        String masterRefId = null;
+        try {
+            // Oracle DB connection parameters
+            String url = "jdbc:oracle:thin:@bsit-srv04:1521:xe";
+            String username = "ZONE2";
+            String password = "ZONE2";
+            
+            // Load Oracle driver
+            Class.forName("oracle.jdbc.driver.OracleDriver");
+            Connection connection = DriverManager.getConnection(url, username, password);
+            
+            // Execute query
+            String query = "SELECT SUBSTR(GWY.ERR_TXT, INSTR(GWY.ERR_TXT, 'GW') + 2) FROM SOME_TABLE GW";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                masterRefId = rs.getString(1);
+            }
+            rs.close();
+            stmt.close();
+            connection.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return masterRefId;
+    }
+}
+```
+
+In the service class, you would call this `fetchMasterRefId()` method if you need the value from the database.
+
+### Final Thoughts:
+- **UUID for Correlation ID**: This solution generates a unique `CorrelationId` for each request using `UUID.randomUUID()`.
+- **Oracle Database Integration**: If needed, you can integrate Oracle DB queries with JDBC to fetch the `MasterRefID`.
+- **FreeMarker Templates**: FreeMarker will dynamically inject the `CorrelationId` into the final XML output, and your controller will manage the request/response lifecycle.
+
+Let me know if you need any further help or adjustments!
+======
+======
+======
+To address your requirements, I'll walk you through how to implement the `CorrelationId` generation and modify the given service and controller classes. The aim is to:
+
+1. **Generate a Correlation ID** (using `UUID.randomUUID()`).
+2. **Inject it into the final XML response** (or JSON output) as part of the request.
+3. **Modify the Oracle database query part** and provide an overall solution.
+
+Here's a detailed breakdown:
+
+### Step 1: Generating a Correlation ID
+
+You can generate the `CorrelationId` inside a utility method. This can be done using `UUID.randomUUID()`. We will modify your service class (`JsonTOJsonService`) to include this functionality.
+
+### Step 2: Updating the XML and JSON output
+In the process, you will need to inject this `CorrelationId` into the XML and possibly the final JSON as well.
+
+### Step 3: Modifying Service to Handle Database Interaction and UUID
+
+You might want to also consider fetching data from the Oracle DB (`TI_ZONE2`) based on the query for `MasterRefID`. I'll assume the query will be executed when needed.
+
+### Updated Code:
+
+#### 1. **Service Class (`JsonTOJsonService.java`)**
+
+Here’s how you can update your `JsonTOJsonService` to generate the `CorrelationId` and modify the XML creation logic.
+
+```java
+package com.example.ftl_project.Service;
+
+import java.io.StringWriter;
+import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import org.json.JSONObject;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+@Service
+public class JsonTOJsonService {
+
+    // Method to generate a CorrelationId
+    public static String generateCorrelationId() {
+        return UUID.randomUUID().toString();
+    }
+
+    // Method to process the template
+    public String processTemplate(String jsonContent, String ftlContent) {
+        StringWriter writer = new StringWriter();
+        try {
+            Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
+            Template template = new Template("template_xml", new StringReader(ftlContent), cfg);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+
+            // Generate CorrelationId and add it to the data model
+            String correlationId = generateCorrelationId();
+            dataModel.put("correlationId", correlationId);
+
+            // Process template
+            template.process(dataModel, writer);
+        } catch (IOException | TemplateException e) {
+            e.printStackTrace();
+        }
+        return writer.toString();
+    }
+
+    // Mock API Call (you may adjust based on actual integration)
+    public static String processMockApi(String url, String requestBody, String ftlFilePath) throws Exception {
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Type", "application/xml");
+        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            String xmlResponse = response.getBody();
+            return xmlResponse;
+        } else {
+            throw new Exception("Failed to fetch the mock URL response.");
+        }
+    }
+}
+```
+
+#### 2. **Controller Class (`JsonToJsonController.java`)**
+
+In your controller, after receiving the JSON request, you can generate the XML and then call the mock API. The `CorrelationId` will be automatically inserted by the service.
+
+```java
+package com.example.ftl_project.Controller;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.ftl_project.Service.JsonTOJsonService;
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+    @Autowired
+    private JsonTOJsonService jjService;
+
+    @PostMapping(value = "/JtoX", consumes = "application/json", produces = "application/json")
+    public String generateXml(@RequestBody String jsonContent) {
+        try {
+            // Load FTL template for XML
+            String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\path\\to\\your\\template\\toXML_create.ftl")));
+            String mockUrl = "http://bsit-srv04:8003/tiplus2-deploy2/hello";
+            
+            // Process the template and add the correlation ID
+            String xmlOutput = jjService.processTemplate(jsonContent, ftlContent);
+            System.out.println("Generated XML Output: " + xmlOutput);
+
+            // Load FTL template for the final JSON (if needed)
+            String ftlFilePath = new String(Files.readAllBytes(Paths.get("D:\\path\\to\\your\\template\\toJson_create.ftl")));
+
+            // Call mock API with XML output
+            String result = jjService.processMockApi(mockUrl, xmlOutput, ftlFilePath);
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error processing template: " + e.getMessage();
+        }
+    }
+}
+```
+
+### Explanation of Changes:
+1. **`generateCorrelationId()` Method**: This method generates a unique Correlation ID using `UUID.randomUUID()` and returns it as a string.
+   
+2. **Injecting `CorrelationId` into the Data Model**: Inside the `processTemplate()` method, I’ve added the generated `CorrelationId` to the `dataModel`. This will ensure that the `CorrelationId` is injected into your final XML when using FreeMarker.
+
+3. **XML and JSON Processing**: The `processTemplate()` method now handles injecting the correlation ID directly into the XML. The controller (`JsonToJsonController`) then uses this method and passes the generated XML to the mock API.
+
+4. **Oracle Database Connection**: The example assumes you are using `RestTemplate` to call external services. If you need to query the Oracle DB for `MasterRefID`, you can use JDBC or JPA in the service class. Below is a sample code snippet to query an Oracle database using JDBC.
+
+#### 3. **Oracle Database Query Example (Optional)**
+
+If you need to fetch `MasterRefID` from Oracle, you can add a method in `JsonTOJsonService`:
+
+```java
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+public class DatabaseService {
+
+    public String fetchMasterRefId() {
+        String masterRefId = null;
+        try {
+            // Oracle DB connection parameters
+            String url = "jdbc:oracle:thin:@bsit-srv04:1521:xe";
+            String username = "ZONE2";
+            String password = "ZONE2";
+            
+            // Load Oracle driver
+            Class.forName("oracle.jdbc.driver.OracleDriver");
+            Connection connection = DriverManager.getConnection(url, username, password);
+            
+            // Execute query
+            String query = "SELECT SUBSTR(GWY.ERR_TXT, INSTR(GWY.ERR_TXT, 'GW') + 2) FROM SOME_TABLE GW";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                masterRefId = rs.getString(1);
+            }
+            rs.close();
+            stmt.close();
+            connection.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return masterRefId;
+    }
+}
+```
+
+In the service class, you would call this `fetchMasterRefId()` method if you need the value from the database.
+
+### Final Thoughts:
+- **UUID for Correlation ID**: This solution generates a unique `CorrelationId` for each request using `UUID.randomUUID()`.
+- **Oracle Database Integration**: If needed, you can integrate Oracle DB queries with JDBC to fetch the `MasterRefID`.
+- **FreeMarker Templates**: FreeMarker will dynamically inject the `CorrelationId` into the final XML output, and your controller will manage the request/response lifecycle.
+
+Let me know if you need any further help or adjustments!
+
+=
+==
+=
+To run a query in a Spring Boot application and connect to an Oracle database, you’ll need to set up a few components:
+
+1. **Add Oracle JDBC dependency to your `pom.xml` (Maven) or `build.gradle` (Gradle).**
+2. **Configure the database connection properties in `application.properties` or `application.yml`.**
+3. **Use `JdbcTemplate` (or JPA, depending on your preference) to execute the query.**
+
+I’ll guide you through the steps using `JdbcTemplate`, which is simple to integrate and allows you to run SQL queries directly.
+
+### 1. Add Oracle JDBC Dependency
+
+In your `pom.xml`, add the Oracle JDBC dependency (make sure you use the correct version):
+
+```xml
+<dependency>
+    <groupId>com.oracle.database.jdbc</groupId>
+    <artifactId>ojdbc8</artifactId>
+    <version>19.8.0.0</version>  <!-- or the version that fits your environment -->
+</dependency>
+```
+
+### 2. Configure Oracle Database Connection
+
+In your `src/main/resources/application.properties` (or `application.yml`), configure the Oracle database connection:
+
+```properties
+# Oracle Database Connection Properties
+spring.datasource.url=jdbc:oracle:thin:@bsit-srv04:1521:xe
+spring.datasource.username=ZONE2
+spring.datasource.password=ZONE2
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+spring.datasource.hikari.pool-name=HikariCP
+
+# Optional: HikariCP settings (default for Spring Boot)
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.connection-timeout=30000
+spring.datasource.hikari.max-lifetime=600000
+```
+
+### 3. Create a Database Service to Run the Query
+
+Now, create a service class that will interact with the Oracle database to run your query.
+
+#### `DatabaseService.java`
+
+```java
+package com.example.ftl_project.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+public class DatabaseService {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    // Method to fetch MasterRefId from the Oracle Database
+    public String fetchMasterRefId() {
+        // Define the SQL query (adjust as necessary for your actual query)
+        String sql = "SELECT SUBSTR(GWY.ERR_TXT, INSTR(GWY.ERR_TXT, 'GW') + 2) FROM YOUR_TABLE GW WHERE ROWNUM = 1";
+
+        // Execute the query and get the result
+        try {
+            // Query and return the result
+            return jdbcTemplate.queryForObject(sql, String.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // Handle exception as necessary
+        }
+    }
+}
+```
+
+### 4. Enable `JdbcTemplate` in your Spring Boot Application
+
+Spring Boot automatically configures a `JdbcTemplate` bean when you have the `spring-boot-starter-data-jdbc` dependency. If you haven't added this, include it in your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jdbc</artifactId>
+</dependency>
+```
+
+If you're using Spring Data JPA or Hibernate (for ORM-based database interaction), you would need to configure entities and repositories, but for now, we'll focus on using `JdbcTemplate` for direct SQL queries.
+
+### 5. Call the Database Method from Service
+
+You can now call `fetchMasterRefId()` method from the service class where you need to use the `MasterRefId` value. For example, in the `JsonTOJsonService` class:
+
+#### Modify `JsonTOJsonService.java` to Use the Database Query
+
+```java
+package com.example.ftl_project.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Map;
+import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import org.springframework.stereotype.Service;
+
+@Service
+public class JsonTOJsonService {
+
+    @Autowired
+    private DatabaseService databaseService; // Inject the DatabaseService
+
+    // Method to generate a CorrelationId
+    public static String generateCorrelationId() {
+        // Generate a new UUID and return it as a String
+        return UUID.randomUUID().toString();
+    }
+
+    // Method to process the template and include the CorrelationId
+    public String processTemplate(String jsonContent, String ftlContent) {
+        StringWriter writer = new StringWriter();
+        try {
+            // Configure FreeMarker
+            Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
+            Template template = new Template("template_xml", new StringReader(ftlContent), cfg);
+
+            // Convert the JSON content to a Map
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+
+            // Generate the CorrelationId
+            String correlationId = generateCorrelationId();
+
+            // Fetch the MasterRefId from the database
+            String masterRefId = databaseService.fetchMasterRefId();
+
+            // Add the CorrelationId and MasterRefId to the data model
+            dataModel.put("correlationId", correlationId);
+            dataModel.put("masterReferenceId", masterRefId); // Add MasterRefId to data model
+
+            // Process the FreeMarker template with the data model
+            template.process(dataModel, writer);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return writer.toString();
+    }
+}
+```
+
+### 6. Modify Controller to Use Updated Service
+
+In your `JsonToJsonController.java`, the service is already set up to call `processTemplate()` which will now include the `MasterRefId` along with the `CorrelationId` when generating the XML:
+
+```java
+package com.example.ftl_project.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.ftl_project.Service.JsonTOJsonService;
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+    @Autowired
+    private JsonTOJsonService jjService;
+
+    @PostMapping(value = "/JtoX", consumes = "application/json", produces = "application/json")
+    public String generateXml(@RequestBody String jsonContent) {
+        try {
+            // Load FTL template for XML
+            String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\path\\to\\your\\template\\toXML_create.ftl")));
+            
+            // Generate XML with the correlation ID and master reference ID
+            String xmlOutput = jjService.processTemplate(jsonContent, ftlContent);
+            System.out.println("Generated XML Output: " + xmlOutput);
+
+            // Call external mock API with the generated XML output if needed
+            // String result = jjService.processMockApi(mockUrl, xmlOutput, ftlFilePath);
+            return xmlOutput; // Return the generated XML
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error processing template: " + e.getMessage();
+        }
+    }
+}
+```
+
+### 7. Testing and Running the Application
+
+1. **Run the Spring Boot Application**: Ensure your Oracle database is running and accessible. Then start your Spring Boot application.
+
+2. **Send a POST request** to `/ftlCheck/JtoX` with a sample JSON body.
+
+### Example JSON Request:
+
+```json
+{
+  "action": "findByIdentifier",
+  "actionCode": "RetrieveMasterDetail",
+  "filterClause": {
+    "sendersReference": "ORM-0012"
+  },
+  "entityCode": "BSIT004"
+}
+```
+
+3. **Expected Output**: The response will contain an XML with a dynamically generated `CorrelationId` and `MasterReferenceId` fetched from the Oracle database.
+
+### 8. Troubleshooting
+
+If you face any issues with the database connection:
+- Make sure that the Oracle database is reachable from your Spring Boot application. Check the URL (`bsit-srv04:1521:xe`) and ensure the correct SID (`xe`).
+- Ensure that the Oracle JDBC driver (`ojdbc8.jar`) is in the classpath and added to the project dependencies correctly.
+
+This setup allows you to run SQL queries against an Oracle database using `JdbcTemplate`, and integrate the results into the generated XML/JSON as needed.
+
+Let me know if you need further clarification!
+=
+=
+=
+Certainly! Below is the **complete Spring Boot controller** and **service class** that meet all the requirements you have mentioned, including:
+
+- Connecting to an **Oracle database**.
+- Executing a **SQL query** to retrieve data.
+- Generating a **UUID-based CorrelationId**.
+- Using **FreeMarker templates** to convert JSON data to XML with placeholders for the `CorrelationId` and the `MasterReferenceId`.
+- Returning the processed result as JSON, with the required fields.
+
+I'll also include the necessary configurations for the database and FreeMarker templates.
+
+---
+
+### **Step-by-Step Setup**
+
+1. **Add dependencies** for Oracle JDBC, FreeMarker, and Spring Boot Starter Data JDBC.
+
+#### `pom.xml`:
+
+```xml
+<dependencies>
+    <!-- Spring Boot Web Starter (for RestController) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- Spring Boot JDBC Starter -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jdbc</artifactId>
+    </dependency>
+
+    <!-- Oracle JDBC Driver -->
+    <dependency>
+        <groupId>com.oracle.database.jdbc</groupId>
+        <artifactId>ojdbc8</artifactId>
+        <version>19.8.0.0</version>
+    </dependency>
+
+    <!-- FreeMarker -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-freemarker</artifactId>
+    </dependency>
+
+    <!-- Jackson for JSON to Map conversion -->
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <!-- Spring Boot Test Dependency (optional for testing) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+2. **Configure the Oracle Database connection**.
+
+#### `application.properties`:
+
+```properties
+# Oracle Database Configuration
+spring.datasource.url=jdbc:oracle:thin:@bsit-srv04:1521:xe
+spring.datasource.username=ZONE2
+spring.datasource.password=ZONE2
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+
+# Connection Pool settings
+spring.datasource.hikari.pool-name=HikariCP
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.connection-timeout=30000
+spring.datasource.hikari.max-lifetime=600000
+
+# FreeMarker settings
+spring.freemarker.enabled=true
+```
+
+3. **Service Class** for database interaction, UUID generation, and FreeMarker processing.
+
+### **Service Class: `JsonTOJsonService.java`**
+
+```java
+package com.example.ftl_project.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+import java.io.StringWriter;
+import java.io.StringReader;
+import java.util.Map;
+import java.util.UUID;
+
+@Service
+public class JsonTOJsonService {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate; // JdbcTemplate for interacting with Oracle DB
+
+    // Method to generate a CorrelationId (UUID)
+    public static String generateCorrelationId() {
+        return UUID.randomUUID().toString();
+    }
+
+    // Method to fetch the MasterRefId from the Oracle database
+    public String fetchMasterRefId() {
+        // SQL query to retrieve MasterRefId (modify as per your requirement)
+        String sql = "SELECT SUBSTR(GWY.ERR_TXT, INSTR(GWY.ERR_TXT, 'GW') + 2) FROM YOUR_TABLE GW WHERE ROWNUM = 1";
+        try {
+            return jdbcTemplate.queryForObject(sql, String.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // Handle error or return null if no value is found
+        }
+    }
+
+    // Method to process the template and include CorrelationId and MasterRefId
+    public String processTemplate(String jsonContent, String ftlContent) {
+        StringWriter writer = new StringWriter();
+        try {
+            // Set up FreeMarker configuration
+            Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
+            Template template = new Template("template_xml", new StringReader(ftlContent), cfg);
+
+            // Convert JSON content into Map using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> dataModel = objectMapper.readValue(jsonContent, Map.class);
+
+            // Generate CorrelationId
+            String correlationId = generateCorrelationId();
+            // Fetch MasterRefId from database
+            String masterRefId = fetchMasterRefId();
+
+            // Add CorrelationId and MasterRefId to the data model
+            dataModel.put("correlationId", correlationId);
+            dataModel.put("masterReferenceId", masterRefId);
+
+            // Process the template with the data model
+            template.process(dataModel, writer);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return writer.toString();
+    }
+}
+```
+
+### **Controller Class: `JsonToJsonController.java`**
+
+```java
+package com.example.ftl_project.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import com.example.ftl_project.Service.JsonTOJsonService;
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+    @Autowired
+    private JsonTOJsonService jjService; // Injecting the service class
+
+    // Endpoint to convert JSON to XML with dynamic CorrelationId and MasterRefId
+    @PostMapping(value = "/JtoX", consumes = "application/json", produces = "application/json")
+    public String generateXml(@RequestBody String jsonContent) {
+        try {
+            // Load the FreeMarker template for XML (provide correct path)
+            String ftlContent = new String(Files.readAllBytes(Paths.get("src/main/resources/templates/Actual_project/toXML_create.ftl")));
+
+            // Generate XML output with CorrelationId and MasterRefId injected into the template
+            String xmlOutput = jjService.processTemplate(jsonContent, ftlContent);
+
+            // Optionally call the mock API or do any additional processing
+            // String mockUrl = "http://bsit-srv04:8003/tiplus2-deploy2/hello";
+            // String result = jjService.processMockApi(mockUrl, xmlOutput, ftlFilePath);
+
+            // Return the XML output or JSON (if needed)
+            return xmlOutput;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error processing template: " + e.getMessage();
+        }
+    }
+}
+```
+
+### **FreeMarker Template: `toXML_create.ftl`**
+
+This template will use the `correlationId` and `masterReferenceId` placeholders to generate the desired XML output.
+
+#### **`toXML_create.ftl`** (place this in `src/main/resources/templates/Actual_project/`)
+
+```xml
+<?xml version="1.0" standalone="yes"?>
+<ServiceRequest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:m="urn:messages.service.ti.apps.tiplus2.misys.com" xmlns:c="urn:common.service.ti.apps.tiplus2.misys.com" xmlns="urn:control.services.tiplus2.misys.com">
+    <RequestHeader>
+        <Service>TI</Service>
+        <Operation>RetrieveMasterDetail</Operation>
+        <Credentials>
+            <Name>SUPERVISOR</Name>
+            <Password>Password</Password>
+            <Certificate>Certificate</Certificate>
+            <Digest>Digest</Digest>
+        </Credentials>
+        <ReplyFormat>FULL</ReplyFormat>
+        <ReplyTarget>ReplyTarget</ReplyTarget>
+        <TargetSystem>ZONE2</TargetSystem>
+        <SourceSystem>API</SourceSystem>
+        <NoRepair>Y</NoRepair>
+        <NoOverride>Y</NoOverride>
+        <CorrelationId>${correlationId}</CorrelationId>
+        <TransactionControl>NONE</TransactionControl>
+    </RequestHeader>
+    <m:RetrieveMasterDetailRequest>
+        <m:DefinitionID>ORMLOOKUP</m:DefinitionID>
+        <m:MasterReference>
+            <c:BehalfOfBranch>CITY</c:BehalfOfBranch>
+            <c:Reference>${masterReferenceId}</c:Reference>
+        </m:MasterReference>
+    </m:RetrieveMasterDetailRequest>
+</ServiceRequest>
+```
+
+### **Final Testing and Execution**
+
+1. **Run the Application**:
+   - Ensure the Oracle database is accessible.
+   - Start your Spring Boot application.
+
+2. **Test the Endpoint**:
+   - Send a POST request to `/ftlCheck/JtoX` with the JSON payload:
+
+```json
+{
+  "action": "findByIdentifier",
+  "actionCode": "RetrieveMasterDetail",
+  "filterClause": {
+    "sendersReference": "ORM-0012"
+  },
+  "entityCode": "BSIT004"
+}
+```
+
+3. **Expected Output**:
+   - The response will be the generated XML, including the `CorrelationId`
+
+ and `MasterReferenceId` fetched from the database.
+
+---
+
+### Key Points:
+
+- **UUID Generation**: `generateCorrelationId()` generates a unique correlation ID using `UUID.randomUUID().toString()`.
+- **Database Interaction**: `fetchMasterRefId()` queries the Oracle database using `JdbcTemplate` to retrieve the `MasterRefId`.
+- **FreeMarker Template**: `toXML_create.ftl` is used to generate XML with the correlation ID and master reference ID dynamically replaced in the response.
+- **Oracle Connection**: The `JdbcTemplate` is configured to connect to Oracle using details in `application.properties`.
+
+This setup will allow you to generate XML or JSON with dynamic data fetched from the Oracle database and processed with FreeMarker templates.

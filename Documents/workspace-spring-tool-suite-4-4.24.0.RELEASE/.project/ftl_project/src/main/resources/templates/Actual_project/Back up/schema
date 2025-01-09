@@ -1,0 +1,300 @@
+First:
+
+{
+"$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "Remittance": {
+          "type": "object",
+          "properties": {
+            "valueDateCurrencyInterbankSettledAmount": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 3
+                }
+              },				
+			  "message": {
+				       "minLength": "Must satrt from 2.",
+				       "maxLength": "Max length is 3."				                 }
+            },
+            "currencyInstructedAmount": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 3,
+                  "message": {
+                    "minLength": "Must satrt from 2.",
+                    "maxLength": "Max length is 3."                  }
+                }
+              },
+              "required": ["currency"]
+            }
+          },
+          "required": ["valueDateCurrencyInterbankSettledAmount", "currencyInstructedAmount"]
+        }
+      },
+      "required": ["Remittance"]
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "mimeType": { "type": "string" },
+              "extensionType": { "type": "string" },
+              "attachment_id": { "type": "string" },
+              "description": { "type": "string" },
+              "filename": { "type": "string" },
+              "type": { "type": "string" },
+              "title": { "type": "string" },
+              "exported_file_path": { "type": "string" },
+              "doc_id": { "type": "string" },
+              "dms_id": { "type": "string" },
+              "filesize": { "type": "string" },
+              "fileUom": { "type": "string" },
+              "encrypted": { "type": "string" }
+            }
+          },
+          "docContent": {
+            "type": "object",
+            "properties": {
+              "base64Encoded": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["data", "documents"]
+}
+================================
+To create a **JSON Schema** that enforces data validity and removes unwanted fields like `"ttggrt"`, as well as applying pattern validation to the `currency` field, you can design a schema that checks for the required fields and enforces constraints.
+
+### JSON Schema to Validate the Data:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "Remittance": {
+          "type": "object",
+          "properties": {
+            "sendersReference": {
+              "type": "string",
+              "minLength": 1
+            },
+            "valueDateCurrencyInterbankSettledAmount": {
+              "type": "object",
+              "properties": {
+                "valueDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"  // Ensures the date is in YYYY-MM-DD format
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3,
+                  "pattern": "^[A-Z]{3}$"  // Currency code must be exactly 3 uppercase letters
+                },
+                "interbankSettledAmount": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": ["valueDate", "currency", "interbankSettledAmount"]
+            },
+            "currencyInstructedAmount": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3,
+                  "pattern": "^[A-Z]{3}$"  // Currency code must be exactly 3 uppercase letters
+                },
+                "amount": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": ["currency", "amount"]
+            },
+            "orderingCustomer": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "accountNumber": {
+                  "type": "string"
+                },
+                "address": {
+                  "type": "string"
+                }
+              },
+              "required": ["name"]
+            },
+            "beneficiaryCustomer": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "accountNumber": {
+                  "type": "string"
+                },
+                "address": {
+                  "type": "string"
+                }
+              },
+              "required": ["name"]
+            },
+            "remittanceInformation": {
+              "type": "object",
+              "properties": {
+                "information": {
+                  "type": "string"
+                }
+              }
+            },
+            "modeOfTransmission": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["SW"]
+              }
+            },
+            "detailsOfCharges": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["OUR"]
+              }
+            },
+            "additionaldata": {
+              "type": "object",
+              "properties": {
+                "transactionPurpose": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "sendersReference",
+            "valueDateCurrencyInterbankSettledAmount",
+            "currencyInstructedAmount",
+            "orderingCustomer",
+            "beneficiaryCustomer",
+            "modeOfTransmission",
+            "detailsOfCharges"
+          ]
+        }
+      },
+      "required": ["Remittance"]
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "mimeType": {
+                "type": "string"
+              },
+              "extensionType": {
+                "type": "string"
+              },
+              "attachment_id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "exported_file_path": {
+                "type": "string"
+              },
+              "doc_id": {
+                "type": "string"
+              },
+              "dms_id": {
+                "type": "string"
+              },
+              "filesize": {
+                "type": "string"
+              },
+              "fileUom": {
+                "type": "string"
+              },
+              "encrypted": {
+                "type": "string"
+              }
+            }
+          },
+          "docContent": {
+            "type": "object",
+            "properties": {
+              "base64Encoded": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["data", "documents"]
+}
+```
+
+### Key Features of the Schema:
+1. **Excludes Unwanted Field (`ttggrt`)**:
+   - The `"ttggrt"` field is **not** present in the schema, so if it's included in the JSON data, it will cause validation to fail. This ensures no unwanted data can be entered.
+
+2. **Pattern Validation for Currency**:
+   - The `currency` fields are validated to ensure they follow the pattern of exactly 3 uppercase letters (using `"pattern": "^[A-Z]{3}$"`). This is a common validation for currency codes (like `USD`, `EUR`, etc.).
+
+3. **Required Fields**:
+   - The schema defines which fields are required (e.g., `sendersReference`, `currencyInstructedAmount`, etc.). If any of these fields are missing from the data, the validation will fail.
+
+4. **Type Constraints**:
+   - Each field is validated for its expected type (e.g., string, number, object, array), ensuring that the data conforms to the expected structure.
+
+5. **Min and Max Length for Fields**:
+   - The `currency` fields have a length restriction of exactly 3 characters.
+   - Strings like `name`, `accountNumber`, and `address` are required to be at least 1 character long.
+
+### How This Helps:
+- **Prevents Invalid Data**: Any unwanted or extraneous fields (like `"ttggrt"`) are automatically rejected because they are not included in the schema.
+- **Ensures Valid Currency Codes**: By using the pattern validation for the `currency` fields, you ensure that the currency codes are exactly 3 uppercase letters.
+- **Validates Required Fields**: The required fields ensure that the essential data is present for each object.
+
+This schema will help you validate the JSON structure to ensure data consistency and integrity according to the rules you set.

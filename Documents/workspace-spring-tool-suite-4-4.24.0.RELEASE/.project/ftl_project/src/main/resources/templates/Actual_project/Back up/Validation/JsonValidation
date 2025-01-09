@@ -1,0 +1,534 @@
+Yes, you can validate JSON using **Jakarta JSON** or other libraries without hardcoding the conditions in your code. This is typically done by using a **JSON Schema**. JSON Schema provides a declarative way to define the structure, data types, and validation rules for your JSON content. 
+
+Here’s how you can achieve this:
+
+---
+
+### **1. Using Jakarta JSON-B and JSON Schema**
+
+Jakarta JSON-B can work with libraries like `networknt-json-schema-validator` or other schema validators to validate a JSON against a predefined schema.
+
+#### Steps:
+1. Define your validation rules in a JSON Schema file.
+2. Use a library to validate JSON content against the schema.
+3. Handle validation results.
+
+#### Example:
+```java
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.ValidationMessage;
+
+import java.util.Set;
+
+public class JsonSchemaValidationExample {
+    public static void main(String[] args) throws Exception {
+        // JSON string to validate
+        String jsonString = """
+            {
+                "name": "John Doe",
+                "age": 25
+            }
+        """;
+
+        // JSON Schema as a string
+        String schemaString = """
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                    "name": { "type": "string" },
+                    "age": { "type": "integer", "minimum": 18 }
+                },
+                "required": ["name", "age"]
+            }
+        """;
+
+        // Parse JSON and Schema
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonNode = mapper.readTree(jsonString);
+        JsonNode schemaNode = mapper.readTree(schemaString);
+
+        // Create JSON Schema Validator
+        JsonSchema schema = JsonSchemaFactory.getInstance().getSchema(schemaNode);
+
+        // Validate JSON
+        Set<ValidationMessage> validationErrors = schema.validate(jsonNode);
+
+        // Print validation results
+        if (validationErrors.isEmpty()) {
+            System.out.println("Valid JSON!");
+        } else {
+            System.out.println("Invalid JSON!");
+            validationErrors.forEach(error -> System.out.println(error.getMessage()));
+        }
+    }
+}
+```
+
+---
+
+### **2. Benefits of JSON Schema Validation**
+- **No Hardcoding Conditions**: All validation rules are specified in the schema file, not in your code.
+- **Reusable Rules**: The schema can be reused across different applications or modules.
+- **Standardized**: JSON Schema follows a standardized format, making it easy to share and maintain.
+- **Dynamic Validation**: You can validate different JSON structures by simply swapping the schema file.
+
+---
+
+### **3. External JSON Schema File**
+You can also store the schema in an external file and load it dynamically:
+
+#### Example:
+```java
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.ValidationMessage;
+
+import java.io.File;
+import java.util.Set;
+
+public class JsonSchemaValidationFromFile {
+    public static void main(String[] args) throws Exception {
+        // Load JSON and Schema from files
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonNode = mapper.readTree(new File("input.json")); // JSON file
+        JsonNode schemaNode = mapper.readTree(new File("schema.json")); // Schema file
+
+        // Create JSON Schema Validator
+        JsonSchema schema = JsonSchemaFactory.getInstance().getSchema(schemaNode);
+
+        // Validate JSON
+        Set<ValidationMessage> validationErrors = schema.validate(jsonNode);
+
+        // Print validation results
+        if (validationErrors.isEmpty()) {
+            System.out.println("Valid JSON!");
+        } else {
+            System.out.println("Invalid JSON!");
+            validationErrors.forEach(error -> System.out.println(error.getMessage()));
+        }
+    }
+}
+```
+
+---
+
+### **Advantages of Using Schema**
+1. **Separation of Concerns**: Schema defines rules, and code focuses on processing.
+2. **Flexibility**: Update validation rules without modifying Java code.
+3. **Error Handling**: The validator provides detailed error messages for invalid JSON.
+4. **Compatibility**: JSON Schema is supported by many libraries across different languages.
+
+---
+
+### **Jakarta and JSON Schema Libraries**
+- **Jakarta JSON-P**: Provides basic JSON parsing and processing.
+- **NetworkNT JSON Schema Validator**: Supports JSON Schema validation.
+- **Everit JSON Schema Validator**: Another popular library for JSON Schema validation.
+
+By leveraging a schema, you can validate JSON dynamically and eliminate the need for hardcoded validation conditions.
+===============================
+To validate this JSON against a schema without hardcoding conditions in the code, you can define a **JSON Schema** that specifies the structure, required fields, and constraints. Then, use a library like `networknt-json-schema-validator` to perform the validation.
+
+---
+
+### **JSON Schema for Validation**
+
+Here's a schema that matches your JSON structure:
+
+```json
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "data": {
+            "type": "object",
+            "properties": {
+                "Remittance": {
+                    "type": "object",
+                    "properties": {
+                        "sendersReference": { "type": "string" },
+                        "valueDateCurrencyInterbankSettledAmount": {
+                            "type": "object",
+                            "properties": {
+                                "valueDate": { "type": "string", "format": "date" },
+                                "currency": { "type": "string" },
+                                "interbankSettledAmount": { "type": "number" }
+                            },
+                            "required": ["valueDate", "currency", "interbankSettledAmount"]
+                        },
+                        "currencyInstructedAmount": {
+                            "type": "object",
+                            "properties": {
+                                "currency": { "type": "string" },
+                                "amount": { "type": "number" }
+                            },
+                            "required": ["currency", "amount"]
+                        },
+                        "orderingCustomer": {
+                            "type": "object",
+                            "properties": {
+                                "name": { "type": "string" },
+                                "accountNumber": { "type": "string" },
+                                "address": { "type": "string" }
+                            },
+                            "required": ["name", "accountNumber", "address"]
+                        },
+                        "beneficiaryCustomer": {
+                            "type": "object",
+                            "properties": {
+                                "name": { "type": "string" },
+                                "accountNumber": { "type": "string" },
+                                "address": { "type": "string" }
+                            },
+                            "required": ["name", "accountNumber", "address"]
+                        },
+                        "remittanceInformation": {
+                            "type": "object",
+                            "properties": {
+                                "information": { "type": "string" }
+                            },
+                            "required": ["information"]
+                        },
+                        "modeOfTransmission": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        },
+                        "detailsOfCharges": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        },
+                        "additionaldata": {
+                            "type": "object",
+                            "properties": {
+                                "transactionPurpose": { "type": "string" }
+                            },
+                            "required": ["transactionPurpose"]
+                        }
+                    },
+                    "required": [
+                        "sendersReference",
+                        "valueDateCurrencyInterbankSettledAmount",
+                        "currencyInstructedAmount",
+                        "orderingCustomer",
+                        "beneficiaryCustomer",
+                        "remittanceInformation",
+                        "modeOfTransmission",
+                        "detailsOfCharges",
+                        "additionaldata"
+                    ]
+                }
+            },
+            "required": ["Remittance"]
+        },
+        "documents": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "mimeType": { "type": "string" },
+                            "extensionType": { "type": "string" },
+                            "attachment_id": { "type": "string" },
+                            "description": { "type": "string" },
+                            "filename": { "type": "string" },
+                            "type": { "type": "string" },
+                            "title": { "type": "string" },
+                            "exported_file_path": { "type": "string" },
+                            "doc_id": { "type": "string" },
+                            "dms_id": { "type": "string" },
+                            "filesize": { "type": "string" },
+                            "fileUom": { "type": "string" },
+                            "encrypted": { "type": "string" }
+                        },
+                        "required": [
+                            "mimeType",
+                            "extensionType",
+                            "attachment_id",
+                            "description",
+                            "filename",
+                            "type",
+                            "title",
+                            "exported_file_path",
+                            "doc_id",
+                            "dms_id",
+                            "filesize",
+                            "fileUom",
+                            "encrypted"
+                        ]
+                    },
+                    "docContent": {
+                        "type": "object",
+                        "properties": {
+                            "base64Encoded": { "type": "string" }
+                        },
+                        "required": ["base64Encoded"]
+                    }
+                },
+                "required": ["metadata", "docContent"]
+            }
+        }
+    },
+    "required": ["data", "documents"]
+}
+```
+
+---
+
+### **Java Code for Validation**
+
+Here’s the Java program to validate the JSON against the above schema:
+
+```java
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.ValidationMessage;
+
+import java.io.File;
+import java.util.Set;
+
+public class JsonSchemaValidation {
+    public static void main(String[] args) throws Exception {
+        // Paths to JSON and Schema files
+        String jsonFilePath = "input.json";   // JSON file containing your data
+        String schemaFilePath = "schema.json"; // JSON Schema file
+
+        // Load JSON and Schema
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonNode = mapper.readTree(new File(jsonFilePath));
+        JsonNode schemaNode = mapper.readTree(new File(schemaFilePath));
+
+        // Create JSON Schema Validator
+        JsonSchema schema = JsonSchemaFactory.getInstance().getSchema(schemaNode);
+
+        // Validate JSON
+        Set<ValidationMessage> errors = schema.validate(jsonNode);
+
+        // Print validation results
+        if (errors.isEmpty()) {
+            System.out.println("Valid JSON!");
+        } else {
+            System.out.println("Invalid JSON!");
+            errors.forEach(error -> System.out.println(error.getMessage()));
+        }
+    }
+}
+```
+
+---
+
+### **Steps to Test**
+1. Save the schema into a file (e.g., `schema.json`).
+2. Save the JSON data into a file (e.g., `input.json`).
+3. Compile and run the Java program.
+
+---
+
+### **Output**
+- If the JSON satisfies the schema, it prints:
+  ```
+  Valid JSON!
+  ```
+- If the JSON fails validation, it prints detailed error messages, such as:
+  ```
+  Invalid JSON!
+  $.data.Remittance.orderingCustomer.accountNumber: string is missing but it is required
+  $.documents[0].metadata.mimeType: string is missing but it is required
+  ```
+
+This approach decouples the validation logic from your code, making it flexible and maintainable.
+====================================
+To validate JSON using the **NetworkNT JSON Schema Validator** in a Spring Boot or standalone Java project, you need to add specific dependencies, configure your application properly, and include any additional libraries required for handling JSON schema validation. Below are the steps with dependencies and configuration details.
+
+---
+
+### **1. Required Dependencies**
+Add the following dependencies to your `pom.xml` if you're using Maven:
+
+#### **For JSON Schema Validation**
+```xml
+<dependencies>
+    <!-- NetworkNT JSON Schema Validator -->
+    <dependency>
+        <groupId>com.networknt</groupId>
+        <artifactId>json-schema-validator</artifactId>
+        <version>1.0.78</version>
+    </dependency>
+
+    <!-- Jackson Databind for JSON Parsing -->
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.15.2</version>
+    </dependency>
+</dependencies>
+```
+
+#### **For Spring Boot Applications**
+Add Spring Boot dependencies if needed:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-json</artifactId>
+</dependency>
+```
+
+#### **For Logging (Optional)**
+If you want to use SLF4J for logging:
+```xml
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>2.0.9</version>
+</dependency>
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-simple</artifactId>
+    <version>2.0.9</version>
+</dependency>
+```
+
+---
+
+### **2. Configuration in `application.properties` (if using Spring Boot)**
+Although JSON Schema validation itself doesn't require configuration in `application.properties`, you might need these if your project uses specific paths or environment configurations:
+
+```properties
+# Define JSON schema and JSON file paths (if dynamically loading them)
+json.schema.file=classpath:schema.json
+json.input.file=classpath:input.json
+
+# Logging level (Optional)
+logging.level.com.networknt.schema=DEBUG
+logging.level.org.springframework=INFO
+```
+
+If your schema files are external, specify the full path, e.g.:
+```properties
+json.schema.file=/path/to/schema.json
+json.input.file=/path/to/input.json
+```
+
+---
+
+### **3. Spring Boot Configuration (Optional)**
+If you want to integrate this into a Spring Boot service:
+1. Create a `@Service` to handle JSON validation.
+2. Autowire the schema and JSON file paths from `application.properties`.
+
+#### Example Service for Validation:
+```java
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.ValidationMessage;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.util.Set;
+
+@Service
+public class JsonValidationService {
+
+    @Value("${json.schema.file}")
+    private String schemaFilePath;
+
+    @Value("${json.input.file}")
+    private String jsonFilePath;
+
+    public void validateJson() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+
+        // Load JSON and Schema
+        JsonNode jsonNode = mapper.readTree(new File(jsonFilePath));
+        JsonNode schemaNode = mapper.readTree(new File(schemaFilePath));
+
+        // Create JSON Schema Validator
+        JsonSchema schema = JsonSchemaFactory.getInstance().getSchema(schemaNode);
+
+        // Validate JSON
+        Set<ValidationMessage> errors = schema.validate(jsonNode);
+
+        if (errors.isEmpty()) {
+            System.out.println("Valid JSON!");
+        } else {
+            System.out.println("Invalid JSON!");
+            errors.forEach(error -> System.out.println(error.getMessage()));
+        }
+    }
+}
+```
+
+#### Example Controller to Trigger Validation:
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class JsonValidationController {
+
+    @Autowired
+    private JsonValidationService validationService;
+
+    @GetMapping("/validate-json")
+    public String validateJson() {
+        try {
+            validationService.validateJson();
+            return "Validation successful!";
+        } catch (Exception e) {
+            return "Validation failed: " + e.getMessage();
+        }
+    }
+}
+```
+
+---
+
+### **4. Project Directory Structure**
+Ensure your project directory contains the schema and JSON files if you're using external files:
+```
+src/main/resources/
+    application.properties
+    schema.json
+    input.json
+```
+
+---
+
+### **5. Running the Validation**
+- **Standalone Java**: Compile and run the `JsonSchemaValidation` class.
+- **Spring Boot**: Start the application and access the endpoint `http://localhost:8080/validate-json`.
+
+---
+
+### **6. Example Output**
+If the JSON is valid:
+```
+Valid JSON!
+```
+
+If the JSON is invalid:
+```
+Invalid JSON!
+$.data.Remittance.orderingCustomer.accountNumber: string is missing but it is required
+```
+
+---
+
+This setup ensures that your JSON validation logic is clean, scalable, and follows best practices. Let me know if you need further assistance!

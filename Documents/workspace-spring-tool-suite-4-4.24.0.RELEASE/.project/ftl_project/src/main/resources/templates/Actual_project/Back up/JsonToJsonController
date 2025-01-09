@@ -1,0 +1,200 @@
+package com.example.ftl_project.Controller;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.ftl_project.Service.JsonTOJsonService;
+
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+	@Autowired
+	private JsonTOJsonService jjService;
+
+	@PostMapping(value = "/JtoX", consumes = "application/json", produces="application/json")
+	public String generateXml(@RequestBody String jsonContent) {
+		try {
+			
+			String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toXML_create.ftl")));
+			//String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\blue_project\\SpringBoot\\1.FTLdemo\\FTLdemo\\src\\main\\resources\\templates\\Actual_project\\list\\toXML_list.ftl")));
+			//String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\blue_project\\SpringBoot\\1.FTLdemo\\FTLdemo\\src\\main\\resources\\templates\\Actual_project\\detail\\toXML_detail.ftl")));
+
+			
+			String mockUrl = "http://bsit-srv04:8003/tiplus2-deploy2/hello";
+			String xmlOutput = jjService.processTemplate(jsonContent, ftlContent);
+			System.out.println(">>>>>>>>>>"+xmlOutput);
+			String ftlFilePath = new String(
+					Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toJson_create.ftl")));
+					//Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toJson_create.ftl")));
+					//Files.readAllBytes(Paths.get("D:\Bluescope\blue_project\SpringBoot\1.FTLdemo\FTLdemo\src\main\resources\templates\Actual_project\detail\toJson_detail.ftl")));
+
+			String result = jjService.processMockApi(mockUrl, xmlOutput, ftlFilePath);
+
+			return result;
+//			return xmlOutput;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "Error processing template: " + e.getMessage();
+		}
+	}
+
+}
+===========================================================================
+package com.example.ftl_project.Controller;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.ftl_project.Service.JsonTOJsonService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+	@Autowired
+	private JsonTOJsonService jjService;
+
+	@PostMapping(value = "/JtoX", consumes = "application/json", produces="application/json")
+	public String generateXml(@RequestBody String jsonContent) {
+		try {
+			
+			//String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toXML_create.ftl")));
+			//String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toXML_list.ftl")));
+			String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toXML_detail.ftl")));
+
+			
+			String mockUrl = "http://bsit-srv04:8003/tiplus2-deploy2/hello";
+			String xmlOutput = jjService.processTemplate(jsonContent, ftlContent);
+			System.out.println("***********"+xmlOutput);
+			
+			XmlMapper xmlMapper = new XmlMapper();  
+            
+            JsonNode jsonNode = xmlMapper.readTree(xmlOutput);  
+           
+            ObjectMapper objectMapper = new ObjectMapper();  
+            
+            String jsonData = objectMapper.writeValueAsString(jsonNode);  
+
+           
+            JsonNode rootNode = objectMapper.readTree(jsonData);
+
+            
+            String theirReference = rootNode
+                    .path("TFCPCCRT")
+                    .path("Context")
+                    .path("TheirReference")
+                    .asText();
+
+            System.out.println("TheirReference: " + theirReference);
+			String ftlFilePath = new String(
+					//Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toJson_create.ftl")));
+					//Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toJson_list.ftl")));
+					Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toJson_detail.ftl")));
+
+			String result = jjService.processMockApi(mockUrl, xmlOutput, ftlFilePath,theirReference);
+
+			return result;
+//			return xmlOutput;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "Error processing template: " + e.getMessage();
+		}
+	}
+
+}
+
+==================================================
+Final
+==================================================
+package com.example.ftl_project.Controller;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.ftl_project.Service.JsonTOJsonService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
+
+@RestController
+@RequestMapping("/ftlCheck")
+public class JsonToJsonController {
+
+	@Autowired
+	private JsonTOJsonService jjService;
+
+	@PostMapping(value = "/JtoJ", consumes = "application/json", produces="application/json")
+	public String generateXml(@RequestBody String jsonContent) {
+		try {
+			
+			//String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toXML_create.ftl")));
+			//String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toXML_list.ftl")));
+			String ftlContent = new String(Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toXML_detail.ftl")));
+
+			
+			String mockUrl = "http://bsit-srv04:8003/tiplus2-deploy2/hello";
+			String xmlOutput = jjService.processTemplate(jsonContent, ftlContent);
+			System.out.println("***********"+xmlOutput);
+			
+			XmlMapper xmlMapper = new XmlMapper();  
+            
+            JsonNode jsonNode = xmlMapper.readTree(xmlOutput);  
+           
+            ObjectMapper objectMapper = new ObjectMapper();  
+            
+            String jsonData = objectMapper.writeValueAsString(jsonNode);  
+
+           
+            JsonNode rootNode = objectMapper.readTree(jsonData);
+
+            
+            String theirReference = rootNode
+                    .path("TFCPCCRT")
+                    .path("Context")
+                    .path("TheirReference")
+                    .asText();
+            
+            
+
+            System.out.println("TheirReference: " + theirReference);
+			String ftlFilePath = new String(
+					//Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toJson_create.ftl")));
+					//Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toJson_list.ftl")));
+					Files.readAllBytes(Paths.get("D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\toJson_detail.ftl")));
+
+			String result = jjService.processMockApi(mockUrl, xmlOutput, ftlFilePath,theirReference);
+
+			return result;
+//			return xmlOutput;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "Error processing template: " + e.getMessage();
+		}
+	}
+
+}

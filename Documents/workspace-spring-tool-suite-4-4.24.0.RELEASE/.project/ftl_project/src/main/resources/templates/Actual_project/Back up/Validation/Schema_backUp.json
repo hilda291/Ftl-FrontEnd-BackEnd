@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "Remittance": {
+          "type": "object",
+          "properties": {
+            "valueDateCurrencyInterbankSettledAmount": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 3,
+                  "pattern": "^[A-Z]{3}$",
+                  "message": {
+                    "minLength": "Must satrt from 2.",
+                    "maxLength": "Max length is 3.",
+                    "pattern": "The currency must be in Alphabetics"
+                  }
+                },
+                "valueDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+				  "message":{
+					"pattern":"Should be in the format of: yyyy-mm-dd"
+				  }
+                },
+                "interbankSettledAmount": {
+                  "type": "number",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "valueDate",
+                "currency",
+                "interbankSettledAmount"
+              ],
+              "additionalProperties": false
+            },
+            "currencyInstructedAmount": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 3,
+                  "message": {
+                    "minLength": "Must satrt from 2.",
+                    "maxLength": "Max length is 3."
+                  }
+                }
+              },
+              "required": [
+                "currency"
+              ]
+            }
+          },
+          "required": [
+            "valueDateCurrencyInterbankSettledAmount",
+            "currencyInstructedAmount"
+          ]
+        }
+      },
+      "required": [
+        "Remittance"
+      ]
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "mimeType": {
+                "type": "string"
+              },
+              "extensionType": {
+                "type": "string"
+              },
+              "attachment_id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "exported_file_path": {
+                "type": "string"
+              },
+              "doc_id": {
+                "type": "string"
+              },
+              "dms_id": {
+                "type": "string"
+              },
+              "filesize": {
+                "type": "string"
+              },
+              "fileUom": {
+                "type": "string"
+              },
+              "encrypted": {
+                "type": "string"
+              }
+            }
+          },
+          "docContent": {
+            "type": "object",
+            "properties": {
+              "base64Encoded": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "data",
+    "documents"
+  ]
+}

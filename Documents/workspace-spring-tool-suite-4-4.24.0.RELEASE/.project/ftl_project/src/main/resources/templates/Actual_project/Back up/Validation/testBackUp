@@ -1,0 +1,44 @@
+@Test
+    void testValidateJsonAgainstSchema_ValidJson() throws IOException {
+        // Arrange
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode schemaNode = mapper.createObjectNode();
+        ObjectNode propertiesNode = schemaNode.putObject("properties");
+        ObjectNode currencyNode = propertiesNode.putObject("currency");
+        currencyNode.put("type", "string");
+        currencyNode.put("pattern", "^[A-Z]{2,3}$");
+        schemaNode.put("type", "object");
+        schemaNode.putArray("required").add("currency");
+
+        String jsonFilePath = "D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\Json Validation\\inputFORcreate.json";
+
+        // Act & Assert
+        assertDoesNotThrow(() -> JsonWithRegex.validateJsonAgainstSchema(jsonFilePath, schemaNode));
+    }
+
+    @Test
+    void testValidateJsonAgainstSchema_InvalidJson() throws IOException {
+        // Arrange
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode schemaNode = mapper.createObjectNode();
+        ObjectNode propertiesNode = schemaNode.putObject("properties");
+        ObjectNode currencyNode = propertiesNode.putObject("currency");
+        currencyNode.put("type", "string");
+        currencyNode.put("pattern", "^[A-Z]{2,3}$");
+        schemaNode.put("type", "object");
+        schemaNode.putArray("required").add("currency");
+
+        String jsonFilePath = "D:\\Bluescope\\.project\\ftl_project\\src\\main\\resources\\templates\\Actual_project\\Json Validation\\inputFORcreate.json";
+
+        // Redirect System.out to capture output
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outContent));
+
+        // Act
+        JsonWithRegex.validateJsonAgainstSchema(jsonFilePath, schemaNode);
+
+        // Assert
+        String output = outContent.toString();
+        assertTrue(output.contains("Invalid JSON!"), "Expected invalid JSON error.");
+        System.setOut(System.out); // Reset System.out
+    }

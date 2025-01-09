@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ServiceResponse xmlns="urn:control.services.tiplus2.misys.com" xmlns:ns2="urn:messages.service.ti.apps.tiplus2.misys.com" xmlns:ns3="urn:common.service.ti.apps.tiplus2.misys.com">
+    <ResponseHeader>
+        <Service>TI</Service>
+        <Operation>TFCPCCRT</Operation>
+        <Status>SUCCEEDED</Status>
+        <Details>
+            <Warning>Request for service: 'TI' operation: 'TFCPCCRT' does not return any response data</Warning>
+        </Details>
+        <CorrelationId>deabfbb3-587f-4011-b81c-d179d9a29b28</CorrelationId>
+        <TargetSystem>API</TargetSystem>
+        <SourceSystem>ZONE2</SourceSystem>
+    </ResponseHeader>
+</ServiceResponse>
