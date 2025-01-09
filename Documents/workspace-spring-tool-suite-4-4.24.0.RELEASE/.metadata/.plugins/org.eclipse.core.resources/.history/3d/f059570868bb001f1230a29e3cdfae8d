@@ -1,0 +1,166 @@
+package com.example.ftl_project;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Collections;
+import java.util.List;
+import java.util.Arrays;
+import java.util.Map;
+
+import org.springframework.jdbc.core.RowMapper;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.example.ftl_project.Controller.JsonToJsonController;
+import com.example.ftl_project.Exception.ApiProcessingException;
+import com.example.ftl_project.Service.DatabaseService;
+import com.example.ftl_project.Service.JsonTOJsonService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@SpringBootTest
+class FtlProjectApplicationTests {
+
+	@Mock
+	private DatabaseService databaseService;
+	
+	@InjectMocks
+	private DatabaseService databaseService1;
+
+	@InjectMocks
+	private JsonTOJsonService jjService;
+
+	@InjectMocks
+	private JsonToJsonController controller;
+	
+	@Mock
+    private JdbcTemplate jdbcTemplate;
+
+	@Test
+	void testGenerateCorrelationId() {
+		String correlationId = JsonTOJsonService.generateCorrelationId();
+		assertNotNull(correlationId);
+		assertEquals(36, correlationId.length());
+	}
+
+	@Test
+	void testFetchTheirReference() throws IOException {
+		String jsonData = "{\"TFCPCCRT\":{\"Context\":{\"TheirReference\":\"TR-12345\"}}}";
+		JsonNode rootNode = new ObjectMapper().readTree(jsonData);
+		String theirReference = jjService.fetchTheirReference(rootNode);
+		assertEquals("TR-12345", theirReference);
+	}
+
+	@Test
+	void testFetchDataMasterID() {
+		when(databaseService.fetchMasterRefIdList()).thenReturn(List.of("0132OCPC11000308"));
+		String masterRefId = jjService.fetchDataMasterID();
+		assertEquals("0132OCPC11000308", masterRefId);
+
+		when(databaseService.fetchMasterRefIdList()).thenReturn(Collections.emptyList());
+		String emptyMasterId = jjService.fetchDataMasterID();
+		assertNull(emptyMasterId);
+	}
+
+	@Test
+	void testGenerateCorrelationIdAndAddToData() {
+		Map<String, Object> dataModel = mock(Map.class);
+		String correlationId = jjService.generateCorrelationIdAndAddToData(dataModel);
+		assertNotNull(correlationId);
+		verify(dataModel).put("correlationId", correlationId);
+	}
+
+	@Test
+	void testDataForMasterID() {
+		List<String> masterRefId = List.of("0132OCPC11000308");
+		when(databaseService.fetchMasterRefIdList()).thenReturn(masterRefId);
+
+		String result = controller.dataForMasterID();
+
+		verify(databaseService, times(1)).fetchMasterRefIdList();
+		assertEquals("0132OCPC11000308", result);
+	}
+	
+	@Test
+	void testfetchMasterRefIdList_Success() {
+		String sql = "SELECT SUBSTR(GWY.ERR_TXT, INSTR(GWY.ERR_TXT, 'Master', -1, 1) + 7, 16) AS MASTER_REF "
+				+ "FROM GWYIN GWY WHERE THEIR_REF = 'TR-001001' AND GWY.MESS_TYPE = 'TFCPCCRT'";
+		List<String> mockResult = Arrays.asList("0132OCPC11000308", "0132OCPC11000308");
+
+		when(jdbcTemplate.query(eq(sql), any(RowMapper.class))).thenReturn(mockResult);
+		when(databaseService.fetchMasterRefIdList()).thenCallRealMethod();
+		
+		List<String> result = databaseService1.fetchMasterRefIdList();
+		
+		assertEquals(2, result.size());
+		assertEquals("0132OCPC11000308", result.get(0));
+		assertEquals("0132OCPC11000308", result.get(1));
+		verify(jdbcTemplate, times(1)).query(eq(sql), any(RowMapper.class));
+
+	}
+	
+	@Test
+	void testLoggerOutput() {
+		ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(outContent));
+
+		FtlProjectApplication.main(new String[] {});
+		
+		String output = outContent.toString();
+		assertTrue(output.contains("Started for Json to Json Convertion........."), "Logger output should contain 'Starting.............'");
+	}
+
+
+	@Test
+	void testExceptionWithMessage() {
+		String errorMessage = "Test error message";
+		ApiProcessingException exception = new ApiProcessingException(errorMessage);
+
+		assertNotNull(exception);
+		assertEquals(errorMessage, exception.getMessage());
+	}
+
+	@Test
+	void testExceptionWithMessageAndCause() {
+		String errorMessage = "Test error message";
+		Throwable cause = new RuntimeException("Cause of the exception");
+		ApiProcessingException exception = new ApiProcessingException(errorMessage, cause);
+		assertNotNull(exception);
+		assertEquals(errorMessage, exception.getMessage());
+		assertEquals(cause, exception.getCause());
+	}
+
+	@Test
+	void fetchMasterRefIdList_EmptyResult() {
+		String sql = "SELECT SUBSTR(GWY.ERR_TXT, INSTR(GWY.ERR_TXT, 'Master', -1, 1) + 7, 16) AS MASTER_REF FROM GWYIN GWY WHERE THEIR_REF = 'TR-001001' AND GWY.MESS_TYPE = 'TFCPCCRT'";
+		when(jdbcTemplate.query(eq(sql), any(RowMapper.class))).thenReturn(Collections.emptyList());
+
+		List<String> result = databaseService1.fetchMasterRefIdList();
+
+		assertEquals(0, result.size());
+		verify(jdbcTemplate, times(1)).query(eq(sql), any(RowMapper.class));
+
+	}   
+
+	@Test
+	void fetchMasterRefIdList_Exception() {
+		String sql = "SELECT SUBSTR(GWY.ERR_TXT, INSTR(GWY.ERR_TXT, 'Master', -1, 1) + 7, 16) AS MASTER_REF FROM GWYIN GWY WHERE THEIR_REF = 'TR-001001' AND GWY.MESS_TYPE = 'TFCPCCRT'";
+		when(jdbcTemplate.query(eq(sql), any(RowMapper.class))).thenThrow(new RuntimeException("Database error"));
+
+		List<String> result = databaseService1.fetchMasterRefIdList();
+
+		assertEquals(Collections.emptyList(), result);
+		verify(jdbcTemplate, times(1)).query(eq(sql), any(RowMapper.class));
+	}
+}

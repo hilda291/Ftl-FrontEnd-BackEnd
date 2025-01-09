@@ -1,0 +1,2 @@
+spring.application.name=batchProj
+spring.main.allow-bean-definition-overriding=true

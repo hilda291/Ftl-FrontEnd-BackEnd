@@ -1,0 +1,148 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "beneficiaryCustomer": {
+            "type": "object",
+            "properties": {
+                "Account": {
+                    "type": "string",
+                    "not": {
+                        "enum": [
+                            "Null",
+                            "NULL",
+                            "null",
+                            "",
+                            " "
+                        ]
+                    },
+                    "pattern": "^[A-Za-z0-9]+$",
+                    "message": {
+                        "not": "Not be be null",
+                        "pattern": "Must follow pattern"
+                    }
+                },
+                "Name": {
+                    "type": "string"
+                },
+                "Add1": {
+                    "type": "string"
+                },
+                "Add2": {
+                    "type": "string"
+                },
+                "Add3": {
+                    "type": "string"
+                },
+                "IdentifierCode": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "Account"
+            ],
+            "anyOf": [
+                {
+                    "properties": {
+                        "Name": {
+                            "not": {
+                                "enum": [
+                                    "Null",
+                                    "NULL",
+                                    "null",
+                                    "",
+                                    " "
+                                ]
+                            }
+                        },
+                        "Add1": {
+                            "not": {
+                                "enum": [
+                                    "Null",
+                                    "NULL",
+                                    "null",
+                                    "",
+                                    " "
+                                ]
+                            },
+                            "message": {
+                                "not": "When 'Name' is given 'Add1': should not be null or empty"
+                            }
+                        },
+                        "Add2": {
+                            "not": {
+                                "enum": [
+                                    "Null",
+                                    "NULL",
+                                    "null",
+                                    "",
+                                    " "
+                                ]
+                            },
+                            "message": {
+                                "not": "When 'Name' is given 'Add2': should not be null or empty"
+                            }
+                        },
+                        "Add3": {
+                            "not": {
+                                "enum": [
+                                    "Null",
+                                    "NULL",
+                                    "null",
+                                    "",
+                                    " "
+                                ]
+                            },
+                            "message": {
+                                "not": "When 'Name' is given 'Add3': should not be null or empty"
+                            }
+                        }
+                    },
+                    "required": [
+                        "Name"
+                    ],
+                    "dependencies": {
+                        "Name": [
+                            "Add1",
+                            "Add2",
+                            "Add3"
+                        ]
+                    },
+                    "message": {
+                        "dependencies": "When Name is given all the three(3) addresses are mandatory",
+                        "required": "Either Name or IdentifierCode is important",
+                        "not": "Name: It should not be null"
+                    }
+                },
+                {
+                    "properties": {
+                        "IdentifierCode": {
+                            "not": {
+                                "enum": [
+                                    "Null",
+                                    "NULL",
+                                    "null",
+                                    "",
+                                    " "
+                                ]
+                            }
+                        }
+                    },
+                    "required": [
+                        "IdentifierCode"
+                    ],
+                    "message": {
+                        "required": "Either Name or IdentifierCode is important",
+                        "not": "IdentifierCode: It should not be null"
+                    }
+                }
+            ]
+        }
+    },
+    "required": [
+        "beneficiaryCustomer"
+    ],
+    "message": {
+        "required": "beneficiaryCustomer is must"
+    }
+}

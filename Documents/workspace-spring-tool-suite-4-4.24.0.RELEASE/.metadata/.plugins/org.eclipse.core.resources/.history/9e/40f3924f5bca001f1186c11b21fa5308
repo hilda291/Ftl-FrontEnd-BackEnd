@@ -1,0 +1,115 @@
+package com.example.spel.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Service
+public class DetailSchemaValidation {
+
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    public String validateJson(String jsonInput, String schemaFilePath) {
+        try {
+            JsonNode schemaNode = mapper.readTree(new File(schemaFilePath));
+            ObjectNode entityCodeProperty = createEntityCodeProperty();
+            injectReusableSchema(schemaNode, entityCodeProperty);
+            return validateJsonAgainstSchema(jsonInput, schemaNode);
+        } catch (IOException e) {
+            return "Error processing JSON or schema file: " + e.getMessage();
+        }
+    }
+
+    private ObjectNode createEntityCodeProperty() {
+        ObjectNode entityCodeProperty = mapper.createObjectNode();
+        entityCodeProperty.put("type", "string");
+        entityCodeProperty.put("minLength", 3);
+        entityCodeProperty.put("pattern", "^[A-Za-z]{4} [0-9]{3}$");
+
+        ObjectNode messageNode = mapper.createObjectNode();
+        messageNode.put("minLength", "Minimum Length is 3.");
+        messageNode.put("pattern", "Pattern format should be in : Four uppercase or lowercase letters followed by three digits.");
+
+        entityCodeProperty.set("message", messageNode);
+        return entityCodeProperty;
+    }
+
+    private void injectReusableSchema(JsonNode schemaNode, ObjectNode currencyProperty) {
+        if (schemaNode.isObject()) {
+            ObjectNode schemaObject = (ObjectNode) schemaNode;
+            Iterator<String> fieldNames = schemaObject.fieldNames();
+
+            while (fieldNames.hasNext()) {
+                String fieldName = fieldNames.next();
+                JsonNode childNode = schemaObject.get(fieldName);
+
+                if (childNode.isObject() && childNode.has("$ref") && childNode.get("$ref").asText().equals("entityCodeProperty")) {
+                    schemaObject.set(fieldName, currencyProperty);
+                } else {
+                    injectReusableSchema(childNode, currencyProperty);
+                }
+            }
+        } else if (schemaNode.isArray()) {
+            for (JsonNode childNode : schemaNode) {
+                injectReusableSchema(childNode, currencyProperty);
+            }
+        }
+    }
+
+    private String validateJsonAgainstSchema(String jsonInput, JsonNode schemaNode) throws IOException {
+        JsonNode jsonNode = mapper.readTree(jsonInput);
+
+        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
+        JsonSchema schema = factory.getSchema(schemaNode);
+
+        Set<ValidationMessage> errors = schema.validate(jsonNode);
+
+        if (errors.isEmpty()) {
+            return "Valid JSON!";
+        } else {
+            List<String> additionalProperties = new ArrayList<>();
+            List<String> otherErrors = new ArrayList<>();
+
+            String regex = "\\$.*?\\.(\\w+): is not defined in the schema";
+            Pattern pattern = Pattern.compile(regex);
+
+            for (ValidationMessage error : errors) {
+                String errorMessage = error.getMessage();
+
+                Matcher matcher = pattern.matcher(errorMessage);
+                if (matcher.find()) {
+                    String propertyName = matcher.group(1);
+                    additionalProperties.add(propertyName);
+                } else {
+                    otherErrors.add(errorMessage);
+                }
+            }
+
+            StringBuilder result = new StringBuilder("Invalid JSON!");
+
+            if (!additionalProperties.isEmpty()) {
+                result.append("\nInvalid Additional Properties you entered:\n").append(additionalProperties);
+            }
+
+            if (!otherErrors.isEmpty()) {
+                result.append("\nOther Validation Errors:\n");
+                for (String error : otherErrors) {
+                    result.append(error).append("\n");
+                }
+            }
+
+            return result.toString();
+        }
+    }
+}

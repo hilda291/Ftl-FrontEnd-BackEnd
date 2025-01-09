@@ -1,0 +1,5 @@
+spring.application.name=batch
+spring.datasource.url=jdbc:oracle:thin:@bsit-srv04:1521:xe
+spring.datasource.username=ZONE2
+spring.datasource.password=ZONE2
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver

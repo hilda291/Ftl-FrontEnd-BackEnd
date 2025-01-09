@@ -1,0 +1,200 @@
+package com.example.spel;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.example.spel.entity.SpelEntity;
+import com.example.spel.service.SchemaValidation;
+import com.example.spel.service.SpelService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+@SpringBootTest
+class SpelApplicationTests {
+
+	private final SpelService spelService = new SpelService();
+
+	@InjectMocks
+	private SchemaValidation schemaService;
+	
+    ObjectMapper map = new ObjectMapper();
+
+    
+	@Test
+	void testCreateEntityCodeProperty() {
+		
+		ObjectNode entityCodeProperty = schemaService.createEntityCodeProperty(map);
+
+		assertNotNull(entityCodeProperty);
+		assertEquals("string", entityCodeProperty.get("type").asText());
+		assertEquals(3, entityCodeProperty.get("minLength").asInt());
+		assertEquals("^(?![Nn][Uu][Ll][Ll]$).*", entityCodeProperty.get("pattern").asText());
+
+		assertTrue(entityCodeProperty.has("message"));
+		assertEquals("The 'entityCode' must be at least 3 characters long.",
+				entityCodeProperty.get("message").get("minLength").asText());
+		assertEquals("'entityCode' cannot be 'null' as a string.",
+				entityCodeProperty.get("message").get("pattern").asText());
+	}
+
+	@Test
+	void testInsertIntoSchema() throws JsonMappingException, JsonProcessingException {
+		String schemaJson = "{\n" + "  \"type\": \"object\",\n" + "  \"properties\": {\n"
+				+ "    \"entityCode\": {\"type\": \"string\"}\n" + "  }\n" + "}";
+
+		JsonNode schemaNode = map.readTree(schemaJson);
+		ObjectNode entityCodeProperty = schemaService.createEntityCodeProperty(map);
+
+		schemaService.insertIntoSchema(schemaNode, entityCodeProperty);
+
+		assertTrue(schemaNode.has("properties"));
+		JsonNode properties = schemaNode.get("properties");
+		assertTrue(properties.has("entityCode"));
+		assertEquals("string", properties.get("entityCode").get("type").asText());
+	}
+
+	@Test
+	void testJsonValidation() throws IOException {
+
+		String validJson = "{\n" + "  \"action\": \"findByIdentifier\",\n"
+				+ "  \"actionCode\": \"RetrieveMasterDetail\",\n" + "  \"filterClause\": {\n"
+				+ "    \"sendersReference\": \"ORM-0012\"\n" + "  },\n" + "  \"entityCode\": \"BSIT004\"\n" + "}";
+		String invalidJson = "{\n" + "  \"action\": \"null\",\n" + "  \"actionCode\": \"RetrieveMasterDetail\",\n"
+				+ "  \"filterClause\": {\n" + "    \"sendersReference\": \"ORM-0012\"\n" + "  },\n"
+				+ "  \"entityCode\": \"BSIT004\"\n" + "}";
+		String schemaFilePath = "C:\\Users\\LOGESHKUMAR\\eclipse-workspace\\JsonVaildateWithJava\\src\\main\\resources\\templates\\Schema.json";
+		String valid = schemaService.validateJson(validJson, schemaFilePath);
+
+		assertEquals("Valid Json\n", valid);
+		String inValid = schemaService.validateJson(invalidJson, schemaFilePath);
+		assertTrue(inValid.endsWith("Invalid Json\n"));
+	}
+	
+	@Test
+    void testAdditionalProperties() throws IOException {
+		
+        String invalidJson = "{\n"
+        		+ "  \"action\": \"findByIdentifier\",\n"
+        		+ "  \"ext\":\"124\",\n"
+        		+ "  \"actionCode\": \"RetrieveMasterDetail\",\n"
+        		+ "  \"filterClause\": {\n"
+        		+ "    \"sendersReference\": \"ORM-0012\",\n"
+        		+ "    \"ext1\":\"124\",\n"
+        		+ "    \"entityCode\": \"121\"\n"
+        		+ "  },\n"
+        		+ "  \"entityCode\": \"BSIT004\"\n"
+        		+ "}";
+        String schemaFilePath = "C:\\Users\\LOGESHKUMAR\\eclipse-workspace\\JsonVaildateWithJava\\src\\main\\resources\\templates\\Schema.json";
+        
+      String errors = schemaService.validateJson(invalidJson,schemaFilePath);
+        assertFalse(errors.isEmpty());
+        assertTrue(errors.contains("Additional Properties Found:"));
+       
+    }
+	
+    @Test
+    void testValidInput() {
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("findByIdentifier");
+        inputJson.setActionCode("RetrieveMasterDetail");
+        inputJson.setEntityCode("BSIT004");
+        Map<String, String> filterClause = new HashMap<>();
+        filterClause.put("sendersReference", "ORM-0012");
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert no errors
+        assertTrue(errors.isEmpty(), "Expected no validation errors for valid input.");
+    }
+
+    @Test
+    void testInvalidAction() {
+        // Prepare invalid input
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("find"); // Too short
+        inputJson.setActionCode("RetrieveMasterDetail");
+        inputJson.setEntityCode("BSIT004");
+        Map<String, String> filterClause = new HashMap<>();
+        filterClause.put("sendersReference", "ORM-0012");
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert errors
+        assertFalse(errors.isEmpty(), "Expected validation errors for invalid action.");
+        assertEquals("Action must be 15 to 25 alphabetic characters.", errors.get("action"));
+    }
+
+    @Test
+    void testInvalidActionCode() {
+        // Prepare invalid input
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("findByIdentifier");
+        inputJson.setActionCode("Retrieve"); // Too short
+        inputJson.setEntityCode("BSIT004");
+        Map<String, String> filterClause = new HashMap<>();
+        filterClause.put("sendersReference", "ORM-0012");
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert errors
+        assertFalse(errors.isEmpty(), "Expected validation errors for invalid actionCode.");
+        assertEquals("Action Code must be 15 to 30 alphabetic characters.", errors.get("actionCode"));
+    }
+
+    @Test
+    void testInvalidEntityCode() {
+        // Prepare invalid input
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("findByIdentifier");
+        inputJson.setActionCode("RetrieveMasterDetail");
+        inputJson.setEntityCode("BSIT04"); // Too short
+        Map<String, String> filterClause = new HashMap();
+        filterClause.put("sendersReference", "ORM-0012");
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert errors
+        assertFalse(errors.isEmpty(), "Expected validation errors for invalid entityCode.");
+        assertEquals("Entity Code must match the pattern: 4 uppercase letters followed by 3 digits.", errors.get("entityCode"));
+    }
+
+    @Test
+    void testInvalidSendersReference() {
+        // Prepare invalid input
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("findByIdentifier");
+        inputJson.setActionCode("RetrieveMasterDetail");
+        inputJson.setEntityCode("BSIT004");
+        Map<String, String> filterClause = new HashMap<>();
+        filterClause.put("sendersReference", "ORM0012"); // Missing hyphen
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert errors
+        assertFalse(errors.isEmpty(), "Expected validation errors for invalid sendersReference.");
+        assertEquals("Senders Reference must match the pattern: 3 uppercase letters, a hyphen, and 4 digits.", errors.get("sendersReference"));
+    }
+}

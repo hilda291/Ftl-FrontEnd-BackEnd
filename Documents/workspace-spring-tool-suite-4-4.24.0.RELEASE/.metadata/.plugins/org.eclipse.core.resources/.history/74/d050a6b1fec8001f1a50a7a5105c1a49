@@ -1,0 +1,114 @@
+package com.example.spel;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.example.spel.entity.SpelEntity;
+import com.example.spel.service.SpelService;
+
+@SpringBootTest
+class SpelApplicationTests {
+
+	private final SpelService spelService = new SpelService();
+
+    @Test
+    void testValidInput() {
+        // Prepare valid input
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("findByIdentifier");
+        inputJson.setActionCode("RetrieveMasterDetail");
+        inputJson.setEntityCode("BSIT004");
+        Map<String, String> filterClause = new HashMap<>();
+        filterClause.put("sendersReference", "ORM-0012");
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert no errors
+        assertTrue(errors.isEmpty(), "Expected no validation errors for valid input.");
+    }
+
+    @Test
+    void testInvalidAction() {
+        // Prepare invalid input
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("find"); // Too short
+        inputJson.setActionCode("RetrieveMasterDetail");
+        inputJson.setEntityCode("BSIT004");
+        Map<String, String> filterClause = new HashMap<>();
+        filterClause.put("sendersReference", "ORM-0012");
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert errors
+        assertFalse(errors.isEmpty(), "Expected validation errors for invalid action.");
+        assertEquals("Action must be 15 to 25 alphabetic characters.", errors.get("action"));
+    }
+
+    @Test
+    void testInvalidActionCode() {
+        // Prepare invalid input
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("findByIdentifier");
+        inputJson.setActionCode("Retrieve"); // Too short
+        inputJson.setEntityCode("BSIT004");
+        Map<String, String> filterClause = new HashMap<>();
+        filterClause.put("sendersReference", "ORM-0012");
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert errors
+        assertFalse(errors.isEmpty(), "Expected validation errors for invalid actionCode.");
+        assertEquals("Action Code must be 15 to 30 alphabetic characters.", errors.get("actionCode"));
+    }
+
+    @Test
+    void testInvalidEntityCode() {
+        // Prepare invalid input
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("findByIdentifier");
+        inputJson.setActionCode("RetrieveMasterDetail");
+        inputJson.setEntityCode("BSIT04"); // Too short
+        Map<String, String> filterClause = new HashMap();
+        filterClause.put("sendersReference", "ORM-0012");
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert errors
+        assertFalse(errors.isEmpty(), "Expected validation errors for invalid entityCode.");
+        assertEquals("Entity Code must match the pattern: 4 uppercase letters followed by 3 digits.", errors.get("entityCode"));
+    }
+
+    @Test
+    void testInvalidSendersReference() {
+        // Prepare invalid input
+        SpelEntity inputJson = new SpelEntity();
+        inputJson.setAction("findByIdentifier");
+        inputJson.setActionCode("RetrieveMasterDetail");
+        inputJson.setEntityCode("BSIT004");
+        Map<String, String> filterClause = new HashMap<>();
+        filterClause.put("sendersReference", "ORM0012"); // Missing hyphen
+        inputJson.setFilterClause(filterClause);
+
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert errors
+        assertFalse(errors.isEmpty(), "Expected validation errors for invalid sendersReference.");
+        assertEquals("Senders Reference must match the pattern: 3 uppercase letters, a hyphen, and 4 digits.", errors.get("sendersReference"));
+    }
+}

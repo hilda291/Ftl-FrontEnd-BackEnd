@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch https://www.springframework.org/schema/batch/spring-batch.xsd
+        http://www.springframework.org/schema/task https://www.springframework.org/schema/task/spring-task.xsd">
+
+    <!-- Tasklet -->
+    <bean id="helloWorldTasklet" class="com.exa.batch.HelloWorldTasklet"/>
+
+    <!-- Step -->
+    <batch:step id="step1">
+        <batch:tasklet ref="helloWorldTasklet"/>
+    </batch:step>
+
+    <!-- Job -->
+    <batch:job id="helloWorldJob">
+        <batch:step id="step1" parent="step1"/>
+    </batch:job>
+
+    <!-- Job Launcher -->
+    <bean id="jobLauncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository"/>
+    </bean>
+
+    <!-- Job Repository -->
+    <bean id="jobRepository" class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+
+    <!-- Transaction Manager -->
+    <bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/>
+
+    <!-- Scheduler -->
+    <task:scheduler id="taskScheduler" pool-size="5"/>
+
+    <!-- Scheduled Task -->
+    <task:scheduled-tasks>
+        <task:scheduled ref="jobScheduler" method="executeJob" cron="*/5 * * * * *"/>
+    </task:scheduled-tasks>
+
+    <!-- Job Scheduler Bean -->
+    <bean id="jobScheduler" class="com.exa.batch.JobScheduler">
+        <constructor-arg ref="jobLauncher"/>
+        <constructor-arg ref="helloWorldJob"/>
+    </bean>
+</beans>

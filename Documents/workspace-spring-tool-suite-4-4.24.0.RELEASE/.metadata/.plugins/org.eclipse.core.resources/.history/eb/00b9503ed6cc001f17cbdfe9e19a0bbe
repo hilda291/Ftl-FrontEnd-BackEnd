@@ -1,0 +1,37 @@
+package com.exa.batch;
+
+import org.springframework.batch.core.Job;
+
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class })
+@Configuration
+@EnableScheduling
+@ImportResource({"D:\\Bluescope\\.project\\Batch\\batch\\src\\main\\resources\\batch-config.xml"})
+
+public class BatchApplication {
+    public static void main(String[] args) {
+    	
+        SpringApplication.run(BatchApplication.class, args);
+        ApplicationContext context = new ClassPathXmlApplicationContext("batch-config.xml");
+
+        JobLauncher jobLauncher = context.getBean(JobLauncher.class);
+        Job job = context.getBean("helloWorldJob", Job.class);
+
+        try {
+            JobExecution execution = jobLauncher.run(job, null);
+            System.out.println("Job Status : " + execution.getStatus());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

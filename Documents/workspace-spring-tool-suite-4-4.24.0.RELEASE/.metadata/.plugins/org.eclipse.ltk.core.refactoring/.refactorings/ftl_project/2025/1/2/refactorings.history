@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;ftl_project/src/main/resources/templates/Actual_project/Json Validation/dependencies_BEnificiary.josn&apos; to &apos;dependencies_BEnificiary.json&apos;" description="Rename resource &apos;dependencies_BEnificiary.josn&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/main/resources/templates/Actual_project/Json Validation/dependencies_BEnificiary.josn" name="dependencies_BEnificiary.json" stamp="1736312123970" updateReferences="true"/>
+</session>

@@ -1,0 +1,20 @@
+package com.exa.batch;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+@Configuration
+@ImportResource({"classpath:\batch-config.xml"})
+
+public class BatchApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(BatchApplication.class, args);
+      //  ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("batch-config.xml");
+
+    }
+}

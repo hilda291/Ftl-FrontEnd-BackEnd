@@ -1,0 +1,18 @@
+package com.example.batchChunk.operation;
+
+
+import org.springframework.batch.item.Chunk;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.stereotype.Component;
+
+@Component("chunkWriter")
+public class ChunkWriter implements ItemWriter<String> {
+
+	@Override
+	public void write(Chunk<? extends String> items) throws Exception {
+        System.out.println("Writing items: " + items);
+		
+	}
+
+	
+}

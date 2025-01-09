@@ -1,0 +1,25 @@
+package com.example.spel.service;
+
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.stereotype.Service;
+
+import com.example.spel.entity.SpelEntity;
+
+@Service
+public class SpelService {
+
+	public boolean validateInput(SpelEntity inputjson) {
+		ExpressionParser parser=new SpelExpressionParser();
+		
+		boolean isActionValid=parser.parseExpression(" matches '^[A-Za-z]{16}'").getValue(inputjson,Boolean.class);
+				
+		boolean isActionCodeValid=parser.parseExpression("actionCode matches '^[A-Za-z]{20}'").getValue(inputjson,Boolean.class);
+		
+		boolean isEntityCodeValid=parser.parseExpression("entityCode matches '^[A-Z]{4}[0-9]{3}'").getValue(inputjson,Boolean.class);
+		
+		boolean isSendersReference=parser.parseExpression("filterClause[sendersReference] matches '[A-Z]{3}-[0-9]{4}'").getValue(inputjson,Boolean.class);
+		
+		return isActionValid && isActionCodeValid && isEntityCodeValid && isSendersReference;
+	}
+}

@@ -1,0 +1,9 @@
+package com.example.batchChunk.operation;
+
+import org.springframework.batch.item.ItemReader;
+import org.springframework.stereotype.Component;
+
+@Component("chunkReader")
+public class ChunkReader implements ItemReader<String>{
+
+}

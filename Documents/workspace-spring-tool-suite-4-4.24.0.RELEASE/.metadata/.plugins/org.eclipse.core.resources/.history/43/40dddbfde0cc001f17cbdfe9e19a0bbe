@@ -1,0 +1,2 @@
+spring.application.name=batch
+spring.aot.enabled=false

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;ftl/target/jtox.ftl&apos; to &apos;jtox_2.ftl&apos;" description="Rename resource &apos;jtox.ftl&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="target/jtox.ftl" name="jtox_2.ftl" stamp="1733723354044" updateReferences="true"/>
+</session>

@@ -1,0 +1,10 @@
+spring.application.name=batchProj
+
+# Oracle Database configuration
+spring.datasource.driverClassName=oracle.jdbc.OracleDriver
+spring.datasource.url=jdbc:oracle:thin:@172.16.16.49:1521:fin
+spring.datasource.username=TMH_PROD
+spring.datasource.password=TMH_PROD1
+#spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.Oracle10gDialect
+
+spring.main.allow-bean-definition-overriding=true

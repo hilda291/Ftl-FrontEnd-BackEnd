@@ -1,0 +1,18 @@
+package com.example.batchProj.operation;
+
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.launch.JobLauncher;
+
+public class JobOperation {
+
+	JobLauncher jobLauncher;
+	Job jobtaskletJob;
+	
+	
+	public JobOperation(JobLauncher jobLauncher, Job jobtaskletJob) {
+		this.jobLauncher = jobLauncher;
+		this.jobtaskletJob = jobtaskletJob;
+	}
+	
+	
+}

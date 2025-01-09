@@ -1,0 +1,42 @@
+package com.example.spel.entity;
+
+import java.util.Map;
+
+public class SpelEntity {
+	
+	private String action;
+	private String actionCode;
+	private Map<String,String> filterClause;
+	private String entityCode;
+	public String getAction() {
+		return action;
+	}
+	public void setAction(String action) {
+		this.action = action;
+	}
+	public String getActionCode() {
+		return actionCode;
+	}
+	public void setActionCode(String actionCode) {
+		this.actionCode = actionCode;
+	}
+	public Map<String, String> getFilterClause() {
+		return filterClause;
+	}
+	public void setFilterClause(Map<String, String> filterClause) {
+		this.filterClause = filterClause;
+	}
+	public String getEntityCode() {
+		return entityCode;
+	}
+	public void setEntityCode(String entityCode) {
+		this.entityCode = entityCode;
+	}
+	@Override
+	public String toString() {
+		return "SpelEntity [action=" + action + ", actionCode=" + actionCode + ", filterClause=" + filterClause
+				+ ", entityCode=" + entityCode + "]";
+	}
+	
+	
+}

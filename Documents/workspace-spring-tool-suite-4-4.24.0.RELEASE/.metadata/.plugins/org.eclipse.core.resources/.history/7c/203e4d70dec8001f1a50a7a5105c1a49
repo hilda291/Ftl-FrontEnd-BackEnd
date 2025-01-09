@@ -1,0 +1,48 @@
+package com.example.spel.service;
+
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.stereotype.Service;
+
+import com.example.spel.entity.SpelEntity;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class SpelService {
+
+    public Map<String, String> validateInput(SpelEntity inputJson) {
+        ExpressionParser parser = new SpelExpressionParser();
+        
+        Map<String, String> validationErrors = new HashMap<>();
+        
+
+        boolean isActionValid = parser.parseExpression("action matches '^[A-Za-z]{15,25}$'")
+                .getValue(inputJson, Boolean.class);
+        if (!isActionValid) {
+            validationErrors.put("action", "Action must be 15 to 25 alphabetic characters.");
+        }
+
+        boolean isActionCodeValid = parser.parseExpression("actionCode matches '^[A-Za-z]{15,30}'")
+                .getValue(inputJson, Boolean.class);
+        if (!isActionCodeValid) {
+            validationErrors.put("actionCode", "Action Code must be 15 to 30 alphabetic characters.");
+        }
+
+        boolean isEntityCodeValid = parser.parseExpression("entityCode matches '^[A-Z]{4}[0-9]{3}$'")
+                .getValue(inputJson, Boolean.class);
+        if (!isEntityCodeValid) {
+            validationErrors.put("entityCode", "Entity Code must match the pattern: 4 uppercase letters followed by 3 digits.");
+        }
+
+        boolean isSendersReferenceValid = parser.parseExpression("filterClause['sendersReference'] matches '[A-Z]{3}-[0-9]{4}'")
+                .getValue(inputJson, Boolean.class);
+        if (!isSendersReferenceValid) {
+            validationErrors.put("sendersReference", "Senders Reference must match the pattern: 3 uppercase letters, a hyphen, and 4 digits.");
+        }
+
+
+        return validationErrors;
+    }
+}

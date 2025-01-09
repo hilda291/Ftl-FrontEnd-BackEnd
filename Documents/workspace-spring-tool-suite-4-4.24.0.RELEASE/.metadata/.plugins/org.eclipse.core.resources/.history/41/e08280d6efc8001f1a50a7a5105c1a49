@@ -1,0 +1,29 @@
+package com.example.spel;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.example.spel.entity.SpelEntity;
+import com.example.spel.service.SpelService;
+
+@SpringBootTest
+class SpelApplicationTests {
+
+	private SpelService spelService;
+	
+	@Test
+	void testValidateInput() {
+		
+		String inputJson="{\n"
+				+ "  \"action\": \"findByIdentifier\",\n"
+				+ "  \"actionCode\": \"RetrieveMasterDetail\",\n"
+				+ "  \"filterClause\": {\n"
+				+ "    \"sendersReference\": \"ORM-0012\"\n"
+				+ "  },\n"
+				+ "  \"entityCode\": \"null\"\n"
+				+ "}";
+		
+	//	String result=spelService.validateInput(inputJson);
+	}
+
+}

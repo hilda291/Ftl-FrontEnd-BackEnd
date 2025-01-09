@@ -1,0 +1,5 @@
+package com.example.helloworldspringboot.practice;
+
+public class TaskScheduler {
+
+}

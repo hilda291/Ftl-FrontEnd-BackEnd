@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "^[A-Za-z]+$",
+      "not": {
+        "enum": [
+          "",
+          "null",
+          "Null",
+          " "
+        ]
+      },
+      "message": {
+        "minLength": "Action: Mininum length is 3",
+        "not": "Action: Null or empty is not accepted",
+        "pattern": "Action: Must be in alphabets"
+      }
+    },
+    "actionCode": {
+      "type": "string",
+      "pattern": "^[A-Za-z]+$",
+      "not": {
+        "enum": [
+          "",
+          "null",
+          "Null",
+          " "
+        ]
+      },
+      "message": {
+        "type": "Only strings are allowed",
+        "not": "ActionCode: Null or empty is not accepted",
+        "pattern": "ActionCode: Must be 15 to 30 alphabetic characters."
+      }
+    },
+    "filterClause": {
+      "type": "object",
+      "properties": {
+        "sendersReference": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{3}-[0-9]{4}$",
+          "message": {
+            "pattern": "Senders Reference: Must match the pattern: 3 letters, a hyphen, and 4 digits."
+          }
+        }
+      },
+      "required": [
+        "sendersReference"
+      ],
+      "additionalProperties": false
+    },
+    "myProperty": {
+      "if": {
+        "properties": {
+          "myProperty": {
+            "type": "number"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "enum": [
+            "no",
+            "null",
+            "Null",
+            "NULL"
+          ]
+        },
+        "message": {
+          "not": "In string null not allowed"
+        }
+      },
+      "else": {		  
+		"type":"string",
+	          "message": {
+	            "type": "dtgrfbvsehyrfdtg"
+	          }
+	        }
+    },
+    "entityCode": {
+      "$ref": "entityCodeProperty"
+    }
+  },
+  "required": [
+    "action",
+    "actionCode",
+    "entityCode"
+  ],
+  "additionalProperties": false
+}

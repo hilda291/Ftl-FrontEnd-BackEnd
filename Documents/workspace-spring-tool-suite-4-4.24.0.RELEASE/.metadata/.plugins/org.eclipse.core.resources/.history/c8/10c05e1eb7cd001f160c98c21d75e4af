@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch https://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <!-- DataSource for MySQL -->
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://localhost:3306/your_database_name"/>
+        <property name="username" value="root"/>
+        <property name="password" value="Myself@123"/>
+    </bean>
+
+    <!-- Transaction Manager -->
+    <bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/>
+
+    <!-- Job Repository -->
+    <bean id="jobRepository" class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+
+    <!-- Job Launcher -->
+    <bean id="jobLauncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository"/>
+    </bean>
+
+    <!-- Tasklet -->
+    <bean id="helloWorldTasklet" class="com.exa.batch.HelloWorldTasklet"/>
+
+    <!-- Step -->
+    <batch:step id="step1">
+        <batch:tasklet ref="helloWorldTasklet"/>
+    </batch:step>
+
+    <!-- Job -->
+    <batch:job id="helloWorldJob">
+        <batch:step id="step" parent="step1"/>
+    </batch:job>
+
+    <!-- Job Scheduler -->
+    <bean id="jobScheduler" class="com.exa.batch.JobScheduler">
+        <constructor-arg ref="jobLauncher"/>
+        <constructor-arg ref="helloWorldJob"/>
+    </bean>
+</beans>

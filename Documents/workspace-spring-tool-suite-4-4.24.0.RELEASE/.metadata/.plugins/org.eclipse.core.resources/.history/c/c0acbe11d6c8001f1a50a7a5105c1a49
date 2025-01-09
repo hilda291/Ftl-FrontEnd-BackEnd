@@ -1,0 +1,66 @@
+package com.example.spel.service;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
+
+public class SchemaValidation {
+
+	 static void validateJsonAgainstSchema(String jsonFilePath, JsonNode schemaNode) throws IOException {
+	        ObjectMapper mapper = new ObjectMapper();
+	        JsonNode jsonNode = mapper.readTree(new File(jsonFilePath));
+
+	        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
+	        JsonSchema schema = factory.getSchema(schemaNode);
+
+	        Set<ValidationMessage> errors = schema.validate(jsonNode);
+
+	        if (errors.isEmpty()) {
+	            System.out.println("Valid JSON!");
+	        } else {
+	            System.out.println("Invalid JSON!");
+
+	            List<String> additionalProperties = new ArrayList<>();
+	            List<String> otherErrors = new ArrayList<>();
+
+	            String regex = "\\$.*?\\.(\\w+): is not defined in the schema";
+
+	            Pattern pattern = Pattern.compile(regex);
+
+	            for (ValidationMessage error : errors) {
+	                String errorMessage = error.getMessage();
+
+	                Matcher matcher = pattern.matcher(errorMessage);
+	                if (matcher.find()) {
+	                    String propertyName = matcher.group(1);
+	                    additionalProperties.add(propertyName);
+	                } else {
+	                    otherErrors.add(errorMessage);
+	                }
+	            }
+
+	            if (!additionalProperties.isEmpty()) {
+	                System.out.println("\nInvalid Additional Properties you entered:");
+	                System.out.println(additionalProperties);
+	            }
+
+	            if (!otherErrors.isEmpty()) {
+	                System.out.println("\nOther Validation Errors:");
+	                for (String error : otherErrors) {
+	                    System.out.println(error);
+	                }
+	            }
+	        }
+	    }
+}

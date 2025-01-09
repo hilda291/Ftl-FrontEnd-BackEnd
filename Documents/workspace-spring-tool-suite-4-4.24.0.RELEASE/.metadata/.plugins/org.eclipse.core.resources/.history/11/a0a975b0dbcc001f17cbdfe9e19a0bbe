@@ -1,0 +1,5 @@
+spring.application.name=batch
+spring.batch.jdbc.initialize-schema=always
+
+spring.main.web-application-type=none
+applicationcontext.properties.path=classpath

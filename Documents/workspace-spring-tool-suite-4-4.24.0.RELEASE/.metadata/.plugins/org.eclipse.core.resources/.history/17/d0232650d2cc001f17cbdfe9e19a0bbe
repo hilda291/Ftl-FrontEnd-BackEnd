@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+                           http://www.springframework.org/schema/scheduling http://www.springframework.org/schema/scheduling/spring-scheduling.xsd">
+
+    <!-- Define the Tasklet bean -->
+    <bean id="helloWorldTasklet" class="com.exa.batch.HelloWorldTasklet"/>
+
+    <!-- Define the job -->
+    <batch:job id="helloWorldJob">
+        <batch:step id="step1">
+            <batch:tasklet ref="helloWorldTasklet"/>
+        </batch:step>
+    </batch:job>
+
+    <!-- Scheduling Configuration to execute the job every 5 seconds -->
+    <task:scheduled-tasks>
+        <task:scheduled ref="helloWorldJob" method="execute" cron="*/5 * * * * *"/>
+    </task:scheduled-tasks>
+
+</beans>

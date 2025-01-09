@@ -1,0 +1,26 @@
+package com.exa.batch;
+
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.beans.factory.annotation.Autowired;
+
+public class JobScheduler {
+
+	@Autowired
+	private JobLauncher jobLauncher;
+	private Job taskletJob;
+	
+	public JobScheduler(JobLauncher jobLauncher, Job taskletJob) {
+		super();
+		this.jobLauncher = jobLauncher;
+		this.taskletJob = taskletJob;
+	}
+	
+	public void executeJob() {
+		try {
+			jobLauncher.run(taskletJob, null);
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+}

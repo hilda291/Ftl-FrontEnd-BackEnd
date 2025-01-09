@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "beneficiaryCustomer": {
+      "type": "object",
+      "properties": {
+        "Account": {
+          "type": "string",
+          "minLength": 1,
+          "not": {
+            "enum": ["null", "NULL", "","Null"," "]
+          },
+          "message": {"not": "Null or empty is not accepted"}
+        },
+        "Name": {
+          "type": "string",
+          "minLength": 1,
+		  "not": {
+		             "enum": ["null", "NULL", "","Null"," "]
+		           },
+		           "message": {"not": "NAme: Null or empty is not accepted"}
+        },
+        "Add1": {
+          "type": "string",
+          "minLength": 1,
+		  "not": {
+		             "enum": ["null", "NULL", "","Null"," "]
+		           },
+		           "message": {"not": "Null or empty is not accepted"}
+        },
+        "Add2": {
+          "type": "string",
+          "minLength": 1,
+		  "not": {
+		             "enum": ["null", "NULL", "","Null"," "]
+		           },
+		           "message": {"not": "Null or empty is not accepted"}
+        },
+        "Add3": {
+          "type": "string",
+          "minLength": 1,
+		  "not": {
+		             "enum": ["null", "NULL", "","Null"," "]
+		           },
+		           "message": {"not": "Null or empty is not accepted"}
+        },
+        "IdentifierCode": {
+          "type": "string",
+          "minLength": 1,
+		  "not": {
+		             "enum": ["null", "NULL", "","Null"," "]
+		           },
+		           "message": {"not": "Null or empty is not accepted"}
+        }
+      },
+      "required": ["Account"],
+      "anyOf": [
+        {
+          "required": ["Name", "Add1", "Add2", "Add3"],
+          "dependencies": {
+            "Name": ["Add1", "Add2", "Add3"]
+          },
+		  "message":{
+		  		"dependencies":"When Name is given all the three(3) addresses are mandatory",
+		  	  		"required":"Either Name or IdentifierCode is important"
+		  	  	  }
+        },
+        {
+          "required": ["IdentifierCode"],
+		  "message":{
+		  			"required":"Either Name with 3 addresses or IdentifierCode is important"
+		  		  }
+        }
+		
+      ]
+    }
+  },
+  "required": ["beneficiaryCustomer"],
+  "message": {
+    "required": "The 'beneficiaryCustomer' object is required.",
+    "properties": {
+      "beneficiaryCustomer": {
+        "anyOf": "Either Name with all addresses (Add1, Add2, Add3) or IdentifierCode must be provided."
+      }
+    }
+  }
+}

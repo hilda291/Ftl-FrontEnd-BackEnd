@@ -1,0 +1,32 @@
+package com.example.batchChunk.operation;
+
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
+
+import ch.qos.logback.core.recovery.ResilientSyslogOutputStream;
+
+public class JobOperation {
+
+	private final JobLauncher jobLauncher;
+	private final Job chunkJob;
+	
+	public JobOperation(JobLauncher jobLauncher, Job chunkJob) {
+		super();
+		this.jobLauncher = jobLauncher;
+		this.chunkJob = chunkJob;
+	}
+	
+	public void scheduleChunk() {
+		try {
+			JobParameters jobParameters=new JobParametersBuilder()
+					.addLong("time",  System.currentTimeMillis())
+					.toJobParameters();
+			
+			jobLauncher.run(chunkJob, jobParameters);
+		}catch (Exception e) {
+            e.printStackTrace();
+        }
+	}
+}

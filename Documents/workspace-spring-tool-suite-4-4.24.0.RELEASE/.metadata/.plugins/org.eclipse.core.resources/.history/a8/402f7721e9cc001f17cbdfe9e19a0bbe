@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch https://www.springframework.org/schema/batch/spring-batch.xsd
+        http://www.springframework.org/schema/task https://www.springframework.org/schema/task/spring-task.xsd">
+
+    <!-- Job Repository -->
+    <bean id="jobRepository" class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+
+    <!-- Transaction Manager -->
+    <bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/>
+
+    <!-- Job Launcher -->
+    <bean id="jobLauncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository"/>
+    </bean>
+
+    <!-- Tasklet Bean -->
+    <bean id="helloWorldTasklet" class="com.exa.batch.HelloWorldTasklet"/>
+
+    <!-- Step Configuration -->
+    <batch:step id="step1">
+        <batch:tasklet ref="helloWorldTasklet"/>
+    </batch:step>
+
+    <!-- Job Configuration -->
+    <batch:job id="helloWorldJob">
+        <batch:step id="step1" parent="step1"/>
+    </batch:job>
+
+    <!-- Scheduler Configuration -->
+    <task:scheduler id="scheduler" pool-size="1"/>
+
+    <task:scheduled-tasks>
+        <!-- Trigger to run the job every 5 seconds -->
+        <task:scheduled ref="jobLauncherTasklet" method="run" fixed-rate="5000"/>
+    </task:scheduled-tasks>
+
+    <!-- Job Launcher Tasklet -->
+    <bean id="jobLauncherTasklet" class="org.springframework.batch.core.launch.support.CommandLineJobRunner">
+        <constructor-arg index="0" value="classpath:batch-config.xml"/>
+        <constructor-arg index="1" value="helloWorldJob"/>
+    </bean>
+</beans>

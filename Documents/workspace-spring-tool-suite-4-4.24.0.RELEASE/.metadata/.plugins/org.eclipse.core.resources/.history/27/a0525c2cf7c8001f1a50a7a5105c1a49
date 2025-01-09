@@ -1,0 +1,35 @@
+package com.example.spel;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.example.spel.entity.SpelEntity;
+import com.example.spel.service.SpelService;
+
+@SpringBootTest
+class SpelApplicationTests {
+
+	private SpelService spelServie;
+	
+	private final SpelService spelService = new SpelService();
+
+	
+    @Test
+    @MethodSource("provideInvalidInputData")
+    void testInvalidFields(String fieldName, SpelEntity inputJson, String expectedErrorMessage) {
+        // Call the service
+        Map<String, String> errors = spelService.validateInput(inputJson);
+
+        // Assert the specific error
+        assertFalse(errors.isEmpty(), "Expected validation errors for invalid " + fieldName + ".");
+        assertEquals(expectedErrorMessage, errors.get(fieldName), "Error message mismatch for field: " + fieldName);
+    }
+
+}

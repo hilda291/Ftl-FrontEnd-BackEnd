@@ -1,0 +1,5 @@
+package com.example.batchChunk.operation;
+
+public class JobOperation {
+
+}

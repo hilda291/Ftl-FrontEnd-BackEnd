@@ -1,0 +1,27 @@
+package com.example.spel.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.spel.entity.SpelEntity;
+import com.example.spel.service.SpelService;
+
+@RestController
+public class SpelController {
+
+	@Autowired
+	private SpelService spelService;
+	
+	@PostMapping("/validate")
+	public ResponseEntity<String> validateInput(@RequestBody SpelEntity inputJson ){
+		boolean isValid=spelService.validateInput(inputJson);
+		  if (isValid) {
+              return ResponseEntity.ok("Input is valid.");
+          } else {
+              return ResponseEntity.badRequest().body("Input validation failed.");
+          }
+	}
+}

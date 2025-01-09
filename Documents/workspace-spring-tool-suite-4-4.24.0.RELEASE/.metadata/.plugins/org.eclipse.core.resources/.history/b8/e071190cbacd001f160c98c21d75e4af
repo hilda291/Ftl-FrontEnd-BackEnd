@@ -1,0 +1,13 @@
+package com.example.batchProj;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class BatchProjApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(BatchProjApplication.class, args);
+	}
+
+}

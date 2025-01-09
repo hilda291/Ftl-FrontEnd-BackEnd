@@ -1,0 +1,21 @@
+package com.example.batchChunk.operation;
+
+import org.springframework.batch.item.ItemReader;
+import org.springframework.stereotype.Component;
+
+@Component("chunkReader")
+public class ChunkReader implements ItemReader<String>{
+
+	private final String[] data= {"Item1","Item2","Item3","Item4"};
+	private int index=0;
+	
+	@Override
+	public String read() {
+		if(index<data.length) {
+			System.out.println("Started reading: "+data[index]);
+			return data[index++];
+		}else {
+			return null;
+		}
+	}
+}
